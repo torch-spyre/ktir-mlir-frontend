@@ -11,6 +11,12 @@ add_compile_definitions("MLIR_PYTHON_PACKAGE_PREFIX=${MLIR_PYTHON_PACKAGE_PREFIX
 
 declare_mlir_python_sources(KtdpPythonSources)
 
+declare_mlir_python_sources(KtdpPythonSources.Package
+  ADD_TO_PARENT KtdpPythonSources
+  ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/mlir_ktdp"
+  SOURCES __init__.py
+)
+
 declare_mlir_dialect_python_bindings(
   ADD_TO_PARENT KtdpPythonSources
   ROOT_DIR "mlir_ktdp"
