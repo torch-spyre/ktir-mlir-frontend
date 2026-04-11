@@ -53,12 +53,13 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      # mlir_wheel path: installs mlir_wheel (provides MLIR cmake config) + lit.
-      # custom path: --no-install-project skips the scikit-build-core project
-      # build (which needs MLIR_DIR); only installs lit for check-ktir.
+      # --no-install-project in both paths: cmake is driven explicitly below
+      # and we don't want scikit-build-core to run a project build here
+      # (it enables Python bindings and fails if python sources are absent).
+      # mlir_wheel is only needed for its cmake config (MLIR_DIR).
       - name: Install dependencies (mlir_wheel)
         if: ${{ inputs.mlir-source != 'custom' }}
-        run: uv sync --extra mlir --extra test
+        run: uv sync --no-install-project --extra mlir --extra test
 
       - name: Install dependencies (custom LLVM)
         if: ${{ inputs.mlir-source == 'custom' }}
