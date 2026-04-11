@@ -5,6 +5,8 @@ set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 
+option(KTIR_ENABLE_PYTHON_BINDINGS "Build Python bindings" OFF)
+
 find_package(MLIR REQUIRED CONFIG)
 
 # Define the default argument to use by `lit` when testing.
@@ -34,7 +36,8 @@ add_definitions(${LLVM_DEFINITIONS})
 
 add_subdirectory(include)
 add_subdirectory(lib)
-if(MLIR_ENABLE_BINDINGS_PYTHON)
+if(KTIR_ENABLE_PYTHON_BINDINGS)
+  set(MLIR_ENABLE_BINDINGS_PYTHON ON)
   include(MLIRDetectPythonEnv)
   mlir_configure_python_dev_packages()
   if(NOT MLIR_PYTHON_PACKAGE_PREFIX)
