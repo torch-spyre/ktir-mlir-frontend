@@ -51,33 +51,3 @@ def walk_module(source: str) -> None:
 
     return operations
 
-# TODO: move this block to tools_ktdp/__main__.py and invoke via
-# `python -m tools_ktdp`. Running `python -m tools_ktdp.ir_utils` triggers a
-# RuntimeWarning from runpy because the editable-install redirecting finder
-# pre-registers this module in sys.modules before runpy executes it as __main__.
-if __name__ == "__main__":
-    import argparse
-    import sys
-
-    parser = argparse.ArgumentParser(
-        description="Parse an MLIR module and walk its operations."
-    )
-    parser.add_argument(
-        "file",
-        nargs="?",
-        help="MLIR file to parse (reads stdin if omitted)",
-    )
-    args = parser.parse_args()
-
-    if args.file:
-        with open(args.file) as f:
-            source = f.read()
-    else:
-        source = sys.stdin.read()
-
-    # traversal of the source file
-    operations = walk_module(source)
-
-    # display the operations
-    for op, depth in operations:
-        print(f"{'  ' * depth}{op.name}: {list(op.results.types)}")

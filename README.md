@@ -77,8 +77,8 @@ uv sync --extra mlir --extra test  # also installs pytest and lit
 ```
 
 `mlir_wheel` provides the MLIR CMake config so no extra flags are needed.
-`uv sync` installs the project in editable mode — Python file edits are
-reflected immediately; C++ changes require a rebuild.
+`uv sync` installs the project in editable mode — edits to `tools_ktdp/` are
+reflected immediately; changes to `mlir_ktdp/` or C++ require a rebuild.
 
 #### With a custom MLIR build (no mlir_wheel)
 
@@ -115,6 +115,33 @@ uv run pytest python/test/
 
 For bare cmake builds (no pip install), conftest.py adds
 `build/python_packages/ktdp` to `sys.path` automatically.
+
+## Python Tools
+
+### ktdp-walk
+
+Parse an MLIR file and print a recursive walk of all operations with indentation showing nesting depth:
+
+```bash
+uv run ktdp-walk path/to/file.mlir
+# or from stdin:
+cat file.mlir | uv run ktdp-walk
+```
+
+`ktdp-walk` is also usable as a library:
+
+```python
+from tools_ktdp import ktdp_context
+from tools_ktdp.ir_utils import walk_module
+
+# context manager
+with ktdp_context() as ctx:
+    ...
+
+# walk returns [(op, depth), ...]
+for op, depth in walk_module(source):
+    print(f"{'  ' * depth}{op.name}")
+```
 
 ## Use ktir-opt
 
