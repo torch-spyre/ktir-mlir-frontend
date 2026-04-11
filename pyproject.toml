@@ -1,0 +1,34 @@
+[build-system]
+requires = ["scikit-build-core", "nanobind>=2.12.0", "mlir_wheel"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "ktir-mlir-frontend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "nanobind>=2.12.0",
+]
+
+[project.scripts]
+ktdp-walk = "tools_ktdp.__main__:main"
+
+[project.optional-dependencies]
+mlir = ["mlir_wheel"]
+test = ["pytest", "lit"]
+
+[tool.scikit-build]
+cmake.build-type = "Release"
+cmake.args = ["-DKTIR_ENABLE_PYTHON_BINDINGS=ON", "-GNinja"]
+install.components = ["KtdpPythonModules"]
+# mlir_ktdp/ is fully cmake-managed (extensions + MLIR-generated Python).
+# ktdp_tools/ is pure-Python, NOT managed by cmake, so scikit-build-core
+# handles it here.  In editable installs this gives ktdp_tools a live source
+# redirect; mlir_ktdp falls through to the cmake-installed snapshot as usual.
+wheel.packages = ["python/mlir_ktdp", "python/tools_ktdp"]
+
+[tool.scikit-build.cmake.define]
+MLIR_BINDINGS_PYTHON_INSTALL_PREFIX = "mlir_ktdp"
+
+[tool.uv]
+find-links = ["https://llvm.github.io/eudsl"]
