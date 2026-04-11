@@ -1,0 +1,124 @@
+name: LLVM Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # NOTE: for now we will not have this file checked into the repo
+      # - so all tests on this workflow will be limited to dispatch for the moment
+      - cmake/llvm-hash.txt
+  pull_request:
+    paths:
+      - .github/workflows/llvm-build.yml
+  workflow_dispatch:
+    inputs:
+      llvm-hash:
+        description: "LLVM commit hash to build (overrides cmake/llvm-hash.txt)"
+        required: false
+        type: string
+
+env:
+  SCCACHE_DIR: ${{ github.workspace }}/sccache
+
+jobs:
+
+  # Read the pinned LLVM commit once so all downstream jobs share the same value.
+  get-hash:
+    runs-on: ubuntu-22.04
+    outputs:
+      llvm-hash:       ${{ steps.read.outputs.llvm-hash }}
+      llvm-short-hash: ${{ steps.read.outputs.llvm-short-hash }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read LLVM commit hash
+        id: read
+        run: |
+          # workflow_dispatch input takes precedence over the pinned file
+          LLVM_HASH="${{ inputs.llvm-hash }}"
+          if [ -z "$LLVM_HASH" ]; then
+            LLVM_HASH=$(cat cmake/llvm-hash.txt)
+          fi
+          echo "llvm-hash=$LLVM_HASH"             >> $GITHUB_OUTPUT
+          echo "llvm-short-hash=${LLVM_HASH:0:8}" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build LLVM (${{ matrix.config.runner }})
+    needs: get-hash
+    runs-on: ${{ matrix.config.runs-on }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        config:
+          - { runner: "Ubuntu 22.04 x64",   runs-on: "ubuntu-22.04",     os: "ubuntu", arch: "x64"   }
+          # ubuntu-22.04-arm is a GitHub-hosted runner; requires Team or Enterprise plan
+          # - { runner: "Ubuntu 22.04 ARM64",  runs-on: "ubuntu-22.04-arm", os: "ubuntu", arch: "arm64" }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set artifact name
+        run: |
+          echo "LLVM_INSTALL_DIR=llvm-${{ needs.get-hash.outputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}" >> $GITHUB_ENV
+
+      - name: Checkout LLVM
+        uses: actions/checkout@v4
+        with:
+          repository: llvm/llvm-project
+          path: llvm-project
+          ref: ${{ needs.get-hash.outputs.llvm-hash }}
+
+      - name: Install prerequisites
+        run: python3 -m pip install cmake ninja sccache
+
+      - name: Enable sccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key:          ${{ matrix.config.os }}-${{ matrix.config.arch }}-${{ needs.get-hash.outputs.llvm-short-hash }}
+          restore-keys: ${{ matrix.config.os }}-${{ matrix.config.arch }}-
+
+      - name: Clear sccache
+        run: mkdir -p ${{ env.SCCACHE_DIR }} && rm -rf ${{ env.SCCACHE_DIR }}/*
+
+      - name: Configure LLVM
+        run: >
+          cmake -GNinja -B llvm-project/build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER=clang
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}"
+          -DLLVM_ENABLE_PROJECTS="mlir;llvm"
+          -DLLVM_TARGETS_TO_BUILD="host"
+          -DLLVM_BUILD_UTILS=ON
+          -DLLVM_INSTALL_UTILS=ON
+          -DLLVM_ENABLE_ASSERTIONS=ON
+          -DLLVM_ENABLE_ZSTD=OFF
+          -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
+          llvm-project/llvm
+
+      - name: Build, test, and install LLVM
+        run: ninja -C llvm-project/build check-mlir install
+
+      - name: Package
+        run: tar czf "${{ env.LLVM_INSTALL_DIR }}.tar.gz" "${{ env.LLVM_INSTALL_DIR }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.LLVM_INSTALL_DIR }}
+          path: ${{ env.LLVM_INSTALL_DIR }}.tar.gz
+
+      - name: Dump sccache statistics
+        run: sccache --show-stats
+
+  # Trigger CI with the freshly built LLVM artifacts.
+  trigger-ci:
+    needs: [get-hash, build]
+    uses: ./.github/workflows/ci.yml
+    with:
+      mlir-source:      custom
+      llvm-short-hash:  ${{ needs.get-hash.outputs.llvm-short-hash }}

@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      mlir-source:
+        description: "MLIR source"
+        required: false
+        default: mlir_wheel
+        type: choice
+        options:
+          - mlir_wheel
+          - custom
+      llvm-short-hash:
+        description: "Short LLVM commit hash (required when mlir-source=custom)"
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      mlir-source:
+        description: "MLIR source"
+        required: false
+        default: mlir_wheel
+        type: string
+      llvm-short-hash:
+        description: "Short LLVM commit hash (required when mlir-source=custom)"
+        required: false
+        type: string
+
+jobs:
+
+  # ── C++ only: cmake build + lit tests ──────────────────────────────────────
+
+  cmake-test:
+    name: cmake-test (${{ matrix.config.runner }})
+    runs-on: ${{ matrix.config.runs-on }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { runner: "Ubuntu 22.04 x64",   runs-on: "ubuntu-22.04",     os: "ubuntu", arch: "x64"   }
+          # ubuntu-22.04-arm is a GitHub-hosted runner; requires Team or Enterprise plan
+          # - { runner: "Ubuntu 22.04 ARM64",  runs-on: "ubuntu-22.04-arm", os: "ubuntu", arch: "arm64" }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # mlir_wheel path: installs mlir_wheel (provides MLIR cmake config) + lit.
+      # custom path: --no-install-project skips the scikit-build-core project
+      # build (which needs MLIR_DIR); only installs lit for check-ktir.
+      - name: Install dependencies (mlir_wheel)
+        if: ${{ inputs.mlir-source != 'custom' }}
+        run: uv sync --extra mlir --extra test
+
+      - name: Install dependencies (custom LLVM)
+        if: ${{ inputs.mlir-source == 'custom' }}
+        run: uv sync --no-install-project --extra test
+
+      # ── Path resolution ─────────────────────────────────────────────────────
+      # Both paths set MLIR_DIR and LIT in GITHUB_ENV so the Configure step
+      # below is identical regardless of MLIR source.
+
+      - name: Set paths (mlir_wheel)
+        if: ${{ inputs.mlir-source != 'custom' }}
+        run: |
+          MLIR_DIR=$(uv run python -c \
+            "import mlir_wheel, pathlib; \
+             print(pathlib.Path(mlir_wheel.__file__).parent / 'lib/cmake/mlir')")
+          LIT=$(uv run which lit)
+          echo "MLIR_DIR=$MLIR_DIR" >> $GITHUB_ENV
+          echo "LIT=$LIT"          >> $GITHUB_ENV
+
+      - name: Download LLVM artifact (custom LLVM)
+        if: ${{ inputs.mlir-source == 'custom' }}
+        uses: actions/download-artifact@v4
+        with:
+          # Artifact name matches what llvm-build.yml uploads:
+          # llvm-<short-hash>-<os>-<arch>.tar.gz
+          name: llvm-${{ inputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}
+
+      - name: Set paths (custom LLVM)
+        if: ${{ inputs.mlir-source == 'custom' }}
+        run: |
+          tar -xzf llvm-${{ inputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}.tar.gz
+          MLIR_DIR="$(pwd)/llvm-${{ inputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}/lib/cmake/mlir"
+          LIT=$(uv run which lit)
+          echo "MLIR_DIR=$MLIR_DIR" >> $GITHUB_ENV
+          echo "LIT=$LIT"          >> $GITHUB_ENV
+
+      # ── Build ────────────────────────────────────────────────────────────────
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -GNinja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DKTIR_ENABLE_PYTHON_BINDINGS=OFF \
+            -DMLIR_DIR=${{ env.MLIR_DIR }} \
+            -DLLVM_EXTERNAL_LIT=${{ env.LIT }}
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Test
+        run: cmake --build build --target check-ktir
+
+  # ── Future: Python bindings ─────────────────────────────────────────────────
+  # Add a python-test job here that does:
+  #   mlir_wheel:    uv sync --extra mlir --extra test && uv pip install -e .
+  #   custom LLVM:   uv sync --no-install-project --extra test
+  #                  CMAKE_ARGS="-DMLIR_DIR=..." uv pip install .
+  # then runs: pytest python/test/
