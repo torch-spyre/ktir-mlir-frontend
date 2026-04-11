@@ -72,10 +72,10 @@ jobs:
       - name: Set paths (mlir_wheel)
         if: ${{ inputs.mlir-source != 'custom' }}
         run: |
-          MLIR_DIR=$(uv run python -c \
+          MLIR_DIR=$(uv run --no-project python -c \
             "import mlir_wheel, pathlib; \
              print(pathlib.Path(mlir_wheel.__file__).parent / 'lib/cmake/mlir')")
-          LIT=$(uv run which lit)
+          LIT=$(uv run --no-project which lit)
           echo "MLIR_DIR=$MLIR_DIR" >> $GITHUB_ENV
           echo "LIT=$LIT"          >> $GITHUB_ENV
 
@@ -92,7 +92,7 @@ jobs:
         run: |
           tar -xzf llvm-${{ inputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}.tar.gz
           MLIR_DIR="$(pwd)/llvm-${{ inputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}/lib/cmake/mlir"
-          LIT=$(uv run which lit)
+          LIT=$(uv run --no-project which lit)
           echo "MLIR_DIR=$MLIR_DIR" >> $GITHUB_ENV
           echo "LIT=$LIT"          >> $GITHUB_ENV
 
