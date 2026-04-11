@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       llvm-hash:
-        description: "LLVM commit hash to build (overrides cmake/llvm-hash.txt)"
+        description: "Full 40-character LLVM commit SHA to build (overrides cmake/llvm-hash.txt)"
         required: false
         type: string
 
@@ -111,6 +111,15 @@ jobs:
         with:
           name: ${{ env.LLVM_INSTALL_DIR }}
           path: ${{ env.LLVM_INSTALL_DIR }}.tar.gz
+          # Artifacts are only needed to pass to ci.yml immediately after this
+          # workflow completes. 3 days covers manual reruns without accumulating
+          # storage over the 90-day default.
+          retention-days: 3
+          # Without overwrite, re-running with the same hash creates duplicate
+          # artifacts with the same name. download-artifact@v4 then becomes
+          # ambiguous when triggered outside of this workflow (e.g. workflow_dispatch
+          # on ci.yml). overwrite keeps exactly one artifact per hash/os/arch.
+          overwrite: true
 
       - name: Dump sccache statistics
         run: sccache --show-stats
