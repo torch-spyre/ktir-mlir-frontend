@@ -11,10 +11,20 @@ add_compile_definitions("MLIR_PYTHON_PACKAGE_PREFIX=${MLIR_PYTHON_PACKAGE_PREFIX
 
 declare_mlir_python_sources(KtdpPythonSources)
 
+# SOURCES_GLOB picks up all .py files added to mlir_ktdp/ automatically.
+# Note: cmake evaluates globs at configure time, so adding a new file requires
+# re-running cmake configure (cmake -S . -B build ...) to pick it up.
+# Non-.py files (e.g. .pyi stubs, data files) are NOT covered by this glob
+# and must be added explicitly via a separate declare_mlir_python_sources call.
+# This declaration controls the cmake build tree (bare cmake + PYTHONPATH) and
+# the installed wheel (via cmake --install --component KtdpPythonModules).
+# Pure-Python tools that are NOT part of the cmake build (e.g. ktdp_tools/)
+# live outside mlir_ktdp/ and are packaged by scikit-build-core via
+# wheel.packages in pyproject.toml — do NOT add them here.
 declare_mlir_python_sources(KtdpPythonSources.Package
   ADD_TO_PARENT KtdpPythonSources
   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/mlir_ktdp"
-  SOURCES __init__.py
+  SOURCES_GLOB "*.py"
 )
 
 declare_mlir_dialect_python_bindings(
