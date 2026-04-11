@@ -20,29 +20,41 @@
 Utilities for inspecting KTIR modules.
 """
 
+from contextlib import contextmanager
 from mlir_ktdp.ir import Context, Module
 from mlir_ktdp.dialects import ktdp_nanobind as ktdp_d
 
 
-def walk_module(source: str) -> None:
-    """Parse an MLIR module and print a walk of its operations."""
+@contextmanager
+def ktdp_context():
+    """Context manager that creates an MLIR context with KTDP dialects registered."""
     with Context() as ctx:
         ktdp_d.register_dialects(ctx)
+        yield ctx
+
+
+
+def walk_module(source: str) -> None:
+    """Parse an MLIR module and recursively walk all operations."""
+
+    operations = []
+    def _walk_op(op, depth: int) -> None:
+        operations.append((op, depth))
+        for region in op.regions:
+            for block in region.blocks:
+                for child in block.operations:
+                    _walk_op(child, depth + 1)
+
+    with ktdp_context() as ctx:
         module = Module.parse(source, ctx)
-        module.dump()
+        _walk_op(module.operation, 0)
 
-        print("=== Walking Operations ===")
-        for op in module.body.operations:
-            print(f"top-level: {op.name}")
-            for region in op.regions:
-                for block in region.blocks:
-                    for inner_op in block.operations:
-                        print(
-                            f"  {inner_op.name}: "
-                            f"{list(inner_op.operation.results.types)}"
-                        )
+    return operations
 
-
+# TODO: move this block to tools_ktdp/__main__.py and invoke via
+# `python -m tools_ktdp`. Running `python -m tools_ktdp.ir_utils` triggers a
+# RuntimeWarning from runpy because the editable-install redirecting finder
+# pre-registers this module in sys.modules before runpy executes it as __main__.
 if __name__ == "__main__":
     import argparse
     import sys
@@ -63,4 +75,9 @@ if __name__ == "__main__":
     else:
         source = sys.stdin.read()
 
-    walk_module(source)
+    # traversal of the source file
+    operations = walk_module(source)
+
+    # display the operations
+    for op, depth in operations:
+        print(f"{'  ' * depth}{op.name}: {list(op.results.types)}")
