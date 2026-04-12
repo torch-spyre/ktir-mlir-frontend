@@ -34,10 +34,13 @@ jobs:
       - name: Read LLVM commit hash
         id: read
         run: |
-          # workflow_dispatch input takes precedence over the pinned file
+          # workflow_dispatch input takes precedence over the pinned file.
+          # If neither is present, fall back to empty string — downstream jobs
+          # that need a hash (build) will skip; jobs that don't (trigger-ci
+          # with mlir_wheel) are unaffected.
           LLVM_HASH="${{ inputs.llvm-hash }}"
           if [ -z "$LLVM_HASH" ]; then
-            LLVM_HASH=$(cat cmake/llvm-hash.txt)
+            LLVM_HASH=$(cat cmake/llvm-hash.txt 2>/dev/null || echo "")
           fi
           echo "llvm-hash=$LLVM_HASH"             >> $GITHUB_OUTPUT
           echo "llvm-short-hash=${LLVM_HASH:0:8}" >> $GITHUB_OUTPUT
@@ -45,6 +48,7 @@ jobs:
   build:
     name: Build LLVM (${{ matrix.config.runner }})
     needs: get-hash
+    if: ${{ needs.get-hash.outputs.llvm-hash != '' }}
     runs-on: ${{ matrix.config.runs-on }}
 
     strategy:
@@ -124,10 +128,14 @@ jobs:
       - name: Dump sccache statistics
         run: sccache --show-stats
 
-  # Trigger CI with the freshly built LLVM artifacts.
+  # Trigger CI against the freshly built LLVM artifact.
+  # Only runs when a hash was resolved — ci.yml already runs independently
+  # on push/PR with mlir_wheel, so triggering it here with mlir_wheel would
+  # be a duplicate.
   trigger-ci:
     needs: [get-hash, build]
+    if: ${{ needs.get-hash.outputs.llvm-hash != '' }}
     uses: ./.github/workflows/ci.yml
     with:
-      mlir-source:      custom
-      llvm-short-hash:  ${{ needs.get-hash.outputs.llvm-short-hash }}
+      mlir-source:     custom
+      llvm-short-hash: ${{ needs.get-hash.outputs.llvm-short-hash }}
