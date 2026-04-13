@@ -29,7 +29,7 @@ declare_mlir_python_sources(KtdpPythonSources.Package
 
 declare_mlir_dialect_python_bindings(
   ADD_TO_PARENT KtdpPythonSources
-  ROOT_DIR "mlir_ktdp"
+  ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/mlir_ktdp"
   TD_FILE dialects/KtdpOps.td
   SOURCES
     dialects/ktdp_nanobind.py
