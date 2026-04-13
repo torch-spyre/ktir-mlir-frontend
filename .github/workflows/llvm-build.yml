@@ -83,9 +83,6 @@ jobs:
           key:          ${{ matrix.config.os }}-${{ matrix.config.arch }}-${{ needs.get-hash.outputs.llvm-short-hash }}
           restore-keys: ${{ matrix.config.os }}-${{ matrix.config.arch }}-
 
-      - name: Clear sccache
-        run: mkdir -p ${{ env.SCCACHE_DIR }} && rm -rf ${{ env.SCCACHE_DIR }}/*
-
       - name: Configure LLVM
         run: >
           cmake -GNinja -B llvm-project/build
