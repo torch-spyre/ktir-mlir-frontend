@@ -26,40 +26,122 @@ Memory spaces: `#ktdp.spyre_memory_space<HBM>`, `<LX, core=7>`, `<L0>`, `<unspec
 ## How to Build
 
 ### Prerequisites
-- LLVM/MLIR built
-- CMake >= 3.20, C++17 compiler
+- CMake >= 3.20, Ninja, C++17 compiler
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (for Python environment)
+- Python >= 3.12 (only for Python bindings)
 
-### Build
+### CMake (C++ only)
+
 ```bash
-cmake -S . -B build -DMLIR_DIR=/path/to/llvm-build/lib/cmake/mlir
+cmake -S . -B build -GNinja -DMLIR_DIR=/path/to/llvm-build/lib/cmake/mlir
 cmake --build build -j$(nproc)
+```
+
+### CMake with Python bindings
+
+> **Note:** The recommended way to build Python bindings is via `uv sync`, see the next section.
+
+Python bindings are disabled by default. To enable them, add
+`-DKTIR_ENABLE_PYTHON_BINDINGS=ON` and ensure `nanobind` is installed in the
+active Python environment:
+
+```bash
+cmake -S . -B build -GNinja \
+    -DMLIR_DIR=/path/to/llvm-build/lib/cmake/mlir \
+    -DKTIR_ENABLE_PYTHON_BINDINGS=ON \
+    -DPython3_EXECUTABLE=$(which python3) \
+    -DLLVM_EXTERNAL_LIT=$(which lit)
+cmake --build build -j$(nproc)
+```
+
+The built package lands at `build/python_packages/ktdp/` — use
+`PYTHONPATH=build/python_packages/ktdp` to import `mlir_ktdp`.
+
+> **Note:** `-DLLVM_EXTERNAL_LIT` is only needed to run LIT tests. `mlir_wheel`
+> does not ship `llvm-lit`, so cmake cannot find it automatically.
+
+### pip install (scikit-build-core)
+
+The project uses [scikit-build-core](https://scikit-build-core.readthedocs.io/) to
+drive CMake and produce a wheel. First, create a venv:
+
+```bash
+uv venv --python 3.12
+```
+
+#### With mlir_wheel (recommended)
+
+```bash
+uv sync --extra mlir           # installs deps and builds the project (editable)
+uv sync --extra mlir --extra test  # also installs pytest and lit
+```
+
+`mlir_wheel` provides the MLIR CMake config so no extra flags are needed.
+`uv sync` installs the project in editable mode — edits to `tools_ktdp/` are
+reflected immediately; changes to `mlir_ktdp/` or C++ require a rebuild.
+
+#### With a custom MLIR build (no mlir_wheel)
+
+`uv sync` would fail without `mlir_wheel` because cmake cannot find MLIR.
+Install deps only, then build manually with `MLIR_DIR` set:
+
+```bash
+uv sync --no-install-project --extra test
+CMAKE_ARGS="-DMLIR_DIR=/path/to/llvm-build/lib/cmake/mlir" uv pip install .
 ```
 
 ## Running Tests
 
-### Via CMake
-
-From the build directory:
+### LIT tests (C++ / IR)
 
 ```bash
-cmake --build <build-dir> --target check-ktir
+cmake --build build --target check-ktir
 ```
 
-### Via LIT directly
-
-To run all tests:
+Or directly — lit must be pointed at the **build** directory where cmake
+generates `lit.site.cfg.py`:
 
 ```bash
-llvm-lit -sv test/Ktdp/
+llvm-lit -sv build/test/Ktdp/
+# or, with uv (lit is installed with --extra test):
+uv run lit -sv build/test/Ktdp/
 ```
 
-To run a single test file:
+### Python tests
 
 ```bash
-llvm-lit -sv test/Ktdp/dummy.mlir
+uv run pytest python/test/
 ```
 
-`llvm-lit` is located in your LLVM install's `bin/` directory.
+For bare cmake builds (no pip install), conftest.py adds
+`build/python_packages/ktdp` to `sys.path` automatically.
+
+## Python Tools
+
+### ktdp-walk
+
+Parse an MLIR file and print a recursive walk of all operations with indentation showing nesting depth:
+
+```bash
+uv run ktdp-walk path/to/file.mlir
+# or from stdin:
+cat file.mlir | uv run ktdp-walk
+```
+
+`ktdp-walk` is also usable as a library:
+
+```python
+from tools_ktdp import ktdp_context
+from tools_ktdp.ir_utils import walk_module
+
+# context manager
+with ktdp_context() as ctx:
+    ...
+
+# walk returns [(op, depth), ...]
+for op, depth in walk_module(source):
+    print(f"{'  ' * depth}{op.name}")
+```
 
 ## Use ktir-opt
 
