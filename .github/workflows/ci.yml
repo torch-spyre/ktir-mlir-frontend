@@ -16,7 +16,7 @@ on:
           - mlir_wheel
           - custom
       llvm-short-hash:
-        description: "Short LLVM commit hash (required when mlir-source=custom)"
+        description: "First 8 characters of the LLVM commit SHA (required when mlir-source=custom)"
         required: false
         type: string
   workflow_call:
@@ -53,16 +53,75 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
+      # ── Resolve build configuration ─────────────────────────────────────────
+      # Determines the effective mlir-source and, for the custom path, locates
+      # the pre-built LLVM artifact in the parent repo (or self if not a fork).
+      #
+      # Hash resolution order:
+      #   1. inputs.llvm-short-hash  (workflow_dispatch / workflow_call)
+      #   2. cmake/llvm-hash.txt     (pull_request — no inputs available)
+      #
+      # If a hash is found, mlir-source is forced to 'custom' and the GitHub
+      # API is queried for the artifact. If no artifact is found, falls back
+      # to mlir_wheel with a warning.
+
+      - name: Resolve build configuration
+        id: config
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. Resolve hash
+          SHORT_HASH="${{ inputs.llvm-short-hash }}"
+          if [ -z "$SHORT_HASH" ] && [ -f cmake/llvm-hash.txt ]; then
+            FULL_HASH=$(cat cmake/llvm-hash.txt)
+            SHORT_HASH="${FULL_HASH:0:8}"
+          fi
+
+          # 2. Resolve mlir-source
+          if [ -n "$SHORT_HASH" ]; then
+            MLIR_SOURCE="custom"
+          else
+            MLIR_SOURCE="${{ inputs.mlir-source }}"
+            [ -z "$MLIR_SOURCE" ] && MLIR_SOURCE="mlir_wheel"
+          fi
+
+          # 3. For custom path: find artifact repo and run-id via GitHub API
+          if [ "$MLIR_SOURCE" = "custom" ]; then
+            ARTIFACT_REPO=$(curl -sf \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}" \
+              | jq -r '.parent.full_name // .full_name')
+
+            ARTIFACT_NAME="llvm-${SHORT_HASH}-${{ matrix.config.os }}-${{ matrix.config.arch }}"
+            RUN_ID=$(curl -sf \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/${ARTIFACT_REPO}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+              | jq -r '.artifacts[0].workflow_run.id // empty')
+
+            if [ -z "$RUN_ID" ]; then
+              echo "::warning::Artifact ${ARTIFACT_NAME} not found in ${ARTIFACT_REPO}, falling back to mlir_wheel"
+              MLIR_SOURCE="mlir_wheel"
+            else
+              echo "artifact-repo=${ARTIFACT_REPO}" >> $GITHUB_OUTPUT
+              echo "run-id=${RUN_ID}"               >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          echo "mlir-source=${MLIR_SOURCE}"       >> $GITHUB_OUTPUT
+          echo "llvm-short-hash=${SHORT_HASH}"     >> $GITHUB_OUTPUT
+
+      # ── Install dependencies ────────────────────────────────────────────────
       # --no-install-project in both paths: cmake is driven explicitly below
       # and we don't want scikit-build-core to run a project build here
       # (it enables Python bindings and fails if python sources are absent).
       # mlir_wheel is only needed for its cmake config (MLIR_DIR).
+
       - name: Install dependencies (mlir_wheel)
-        if: ${{ inputs.mlir-source != 'custom' }}
+        if: steps.config.outputs.mlir-source != 'custom'
         run: uv sync --no-install-project --extra mlir --extra test
 
       - name: Install dependencies (custom LLVM)
-        if: ${{ inputs.mlir-source == 'custom' }}
+        if: steps.config.outputs.mlir-source == 'custom'
         run: uv sync --no-install-project --extra test
 
       # ── Path resolution ─────────────────────────────────────────────────────
@@ -70,7 +129,7 @@ jobs:
       # below is identical regardless of MLIR source.
 
       - name: Set paths (mlir_wheel)
-        if: ${{ inputs.mlir-source != 'custom' }}
+        if: steps.config.outputs.mlir-source != 'custom'
         run: |
           MLIR_DIR=$(uv run --no-project python -c \
             "import mlir_wheel, pathlib; \
@@ -80,18 +139,19 @@ jobs:
           echo "LIT=$LIT"          >> $GITHUB_ENV
 
       - name: Download LLVM artifact (custom LLVM)
-        if: ${{ inputs.mlir-source == 'custom' }}
+        if: steps.config.outputs.mlir-source == 'custom'
         uses: actions/download-artifact@v4
         with:
-          # Artifact name matches what llvm-build.yml uploads:
-          # llvm-<short-hash>-<os>-<arch>.tar.gz
-          name: llvm-${{ inputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}
+          name:         llvm-${{ steps.config.outputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}
+          run-id:       ${{ steps.config.outputs.run-id }}
+          repository:   ${{ steps.config.outputs.artifact-repo }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set paths (custom LLVM)
-        if: ${{ inputs.mlir-source == 'custom' }}
+        if: steps.config.outputs.mlir-source == 'custom'
         run: |
-          tar -xzf llvm-${{ inputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}.tar.gz
-          MLIR_DIR="$(pwd)/llvm-${{ inputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}/lib/cmake/mlir"
+          tar -xzf llvm-${{ steps.config.outputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}.tar.gz
+          MLIR_DIR="$(pwd)/llvm-${{ steps.config.outputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}/lib/cmake/mlir"
           LIT=$(uv run --no-project which lit)
           echo "MLIR_DIR=$MLIR_DIR" >> $GITHUB_ENV
           echo "LIT=$LIT"          >> $GITHUB_ENV
