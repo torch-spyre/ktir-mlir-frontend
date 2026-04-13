@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       llvm-hash:
-        description: "LLVM commit hash to build (overrides cmake/llvm-hash.txt)"
+        description: "Full 40-character LLVM commit SHA to build (overrides cmake/llvm-hash.txt)"
         required: false
         type: string
 
@@ -34,10 +34,13 @@ jobs:
       - name: Read LLVM commit hash
         id: read
         run: |
-          # workflow_dispatch input takes precedence over the pinned file
+          # workflow_dispatch input takes precedence over the pinned file.
+          # If neither is present, fall back to empty string — downstream jobs
+          # that need a hash (build) will skip; jobs that don't (trigger-ci
+          # with mlir_wheel) are unaffected.
           LLVM_HASH="${{ inputs.llvm-hash }}"
           if [ -z "$LLVM_HASH" ]; then
-            LLVM_HASH=$(cat cmake/llvm-hash.txt)
+            LLVM_HASH=$(cat cmake/llvm-hash.txt 2>/dev/null || echo "")
           fi
           echo "llvm-hash=$LLVM_HASH"             >> $GITHUB_OUTPUT
           echo "llvm-short-hash=${LLVM_HASH:0:8}" >> $GITHUB_OUTPUT
@@ -45,6 +48,7 @@ jobs:
   build:
     name: Build LLVM (${{ matrix.config.runner }})
     needs: get-hash
+    if: ${{ needs.get-hash.outputs.llvm-hash != '' }}
     runs-on: ${{ matrix.config.runs-on }}
 
     strategy:
@@ -111,14 +115,27 @@ jobs:
         with:
           name: ${{ env.LLVM_INSTALL_DIR }}
           path: ${{ env.LLVM_INSTALL_DIR }}.tar.gz
+          # Artifacts are only needed to pass to ci.yml immediately after this
+          # workflow completes. 3 days covers manual reruns without accumulating
+          # storage over the 90-day default.
+          retention-days: 3
+          # Without overwrite, re-running with the same hash creates duplicate
+          # artifacts with the same name. download-artifact@v4 then becomes
+          # ambiguous when triggered outside of this workflow (e.g. workflow_dispatch
+          # on ci.yml). overwrite keeps exactly one artifact per hash/os/arch.
+          overwrite: true
 
       - name: Dump sccache statistics
         run: sccache --show-stats
 
-  # Trigger CI with the freshly built LLVM artifacts.
+  # Trigger CI against the freshly built LLVM artifact.
+  # Only runs when a hash was resolved — ci.yml already runs independently
+  # on push/PR with mlir_wheel, so triggering it here with mlir_wheel would
+  # be a duplicate.
   trigger-ci:
     needs: [get-hash, build]
+    if: ${{ needs.get-hash.outputs.llvm-hash != '' }}
     uses: ./.github/workflows/ci.yml
     with:
-      mlir-source:      custom
-      llvm-short-hash:  ${{ needs.get-hash.outputs.llvm-short-hash }}
+      mlir-source:     custom
+      llvm-short-hash: ${{ needs.get-hash.outputs.llvm-short-hash }}
