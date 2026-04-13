@@ -92,18 +92,23 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}" \
               | jq -r '.parent.full_name // .full_name')
 
-            ARTIFACT_NAME="llvm-${SHORT_HASH}-${{ matrix.config.os }}-${{ matrix.config.arch }}"
-            RUN_ID=$(curl -sf \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              "https://api.github.com/repos/${ARTIFACT_REPO}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
-              | jq -r '.artifacts[0].workflow_run.id // empty')
-
-            if [ -z "$RUN_ID" ]; then
-              echo "::warning::Artifact ${ARTIFACT_NAME} not found in ${ARTIFACT_REPO}, falling back to mlir_wheel"
+            if [ -z "$ARTIFACT_REPO" ]; then
+              echo "::warning::Could not resolve artifact repository for ${{ github.repository }}, falling back to mlir_wheel"
               MLIR_SOURCE="mlir_wheel"
             else
-              echo "artifact-repo=${ARTIFACT_REPO}" >> $GITHUB_OUTPUT
-              echo "run-id=${RUN_ID}"               >> $GITHUB_OUTPUT
+              ARTIFACT_NAME="llvm-${SHORT_HASH}-${{ matrix.config.os }}-${{ matrix.config.arch }}"
+              RUN_ID=$(curl -sf \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                "https://api.github.com/repos/${ARTIFACT_REPO}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+                | jq -r '.artifacts[0].workflow_run.id // empty')
+
+              if [ -z "$RUN_ID" ]; then
+                echo "::warning::Artifact ${ARTIFACT_NAME} not found in ${ARTIFACT_REPO}, falling back to mlir_wheel"
+                MLIR_SOURCE="mlir_wheel"
+              else
+                echo "artifact-repo=${ARTIFACT_REPO}" >> $GITHUB_OUTPUT
+                echo "run-id=${RUN_ID}"               >> $GITHUB_OUTPUT
+              fi
             fi
           fi
 
