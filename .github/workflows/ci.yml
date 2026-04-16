@@ -33,10 +33,10 @@ on:
 
 jobs:
 
-  # ── C++ only: cmake build + lit tests ──────────────────────────────────────
+  # ── CMake build + lit tests + Python wheel build + pytest ─────────────────
 
-  cmake-test:
-    name: cmake-test (${{ matrix.config.runner }})
+  cmake-py-test:
+    name: cmake-py-test (${{ matrix.config.runner }})
     runs-on: ${{ matrix.config.runs-on }}
 
     strategy:
@@ -177,9 +177,13 @@ jobs:
       - name: Test
         run: cmake --build build --target check-ktir
 
-  # ── Future: Python bindings ─────────────────────────────────────────────────
-  # Add a python-test job here that does:
-  #   mlir_wheel:    uv sync --extra mlir --extra test && uv pip install -e .
-  #   custom LLVM:   uv sync --no-install-project --extra test
-  #                  CMAKE_ARGS="-DMLIR_DIR=..." uv pip install .
-  # then runs: pytest python/test/
+      # ── Python wheel build + pytest ─────────────────────────────────────────
+      # Installs the project as a Python wheel (scikit-build-core drives cmake
+      # with Python bindings ON).  MLIR_DIR is already resolved above; we pass
+      # it via CMAKE_ARGS so both mlir_wheel and custom LLVM paths are uniform.
+
+      - name: Build and install Python wheel
+        run: CMAKE_ARGS="-DMLIR_DIR=${{ env.MLIR_DIR }}" uv pip install .
+
+      - name: Python test
+        run: uv run --no-project pytest python/test/
