@@ -87,6 +87,7 @@ jobs:
           path: ${{ env.SCCACHE_DIR }}
           key:          ${{ matrix.config.os }}-${{ matrix.config.arch }}-${{ needs.get-hash.outputs.llvm-short-hash }}
           restore-keys: ${{ matrix.config.os }}-${{ matrix.config.arch }}-
+          save-always: true
 
       # MLIR_ENABLE_BINDINGS_PYTHON=ON exports MLIRPythonSources.Core and related
       # cmake targets into the install tree. These are required by downstream
