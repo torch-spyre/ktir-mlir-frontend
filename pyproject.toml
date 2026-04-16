@@ -31,7 +31,7 @@ wheel.packages = ["python/mlir_ktdp", "python/tools_ktdp"]
 MLIR_BINDINGS_PYTHON_INSTALL_PREFIX = "mlir_ktdp"
 
 [dependency-groups]
-llvm-build = ["cmake", "ninja", "sccache"]
+llvm-build = ["cmake", "ninja", "sccache", "numpy"]
 
 [tool.uv]
 find-links = ["https://llvm.github.io/eudsl"]
