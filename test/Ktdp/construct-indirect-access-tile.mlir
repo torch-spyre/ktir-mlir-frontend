@@ -60,7 +60,7 @@
 // CHECK-NEXT:     %[[VAL_2:.*]] = arith.constant 20000 : index
 // CHECK-NEXT:     %[[VAL_3:.*]] = ktdp.construct_memory_view %[[VAL_2]], sizes: [4, 8], strides: [8, 1] {coordinate_set = #[[$ATTR_10]], memory_space = #ktdp.spyre_memory_space<HBM>} : memref<4x8xi32>
 // CHECK-NEXT:     %[[VAL_4:.*]] = ktdp.construct_memory_view %[[VAL_1]], sizes: [100, 100], strides: [100, 1] {coordinate_set = #[[$ATTR_11]], memory_space = #ktdp.spyre_memory_space<HBM>} : memref<100x100xf16>
-// CHECK-NEXT:     %[[VAL_5:.*]] = ktdp.construct_indirect_access_tile intermediate_variables(%[[VAL_6:.*]], %[[VAL_7:.*]]) %[[VAL_4]][ind(%[[VAL_3]]{{\[}}%[[VAL_0]] + %[[VAL_6]], %[[VAL_7]]]), (%[[VAL_7]])] {variables_space_order = #[[$ATTR_0]], variables_space_set = #[[$ATTR_10]]} : memref<100x100xf16>, memref<4x8xi32> -> !ktdp.access_tile<4x8xindex>
+// CHECK-NEXT:     %[[VAL_5:.*]] = ktdp.construct_indirect_access_tile intermediate_variables(%[[VAL_6:.*]], %[[VAL_7:.*]]) %[[VAL_4]][ind(%[[VAL_3]]{{\[}}%[[VAL_6]] + %[[VAL_0]], %[[VAL_7]]]), (%[[VAL_7]])] {variables_space_order = #[[$ATTR_0]], variables_space_set = #[[$ATTR_10]]} : memref<100x100xf16>, memref<4x8xi32> -> !ktdp.access_tile<4x8xindex>
 // CHECK-NEXT:     %[[VAL_8:.*]] = ktdp.construct_indirect_access_tile intermediate_variables() %[[VAL_4]][ind(%[[VAL_3]]{{\[}}%[[VAL_0]], 0]), (%[[VAL_0]])] {variables_space_order = #[[$ATTR_3]], variables_space_set = #[[$ATTR_12]]} : memref<100x100xf16>, memref<4x8xi32> -> !ktdp.access_tile<index>
 // CHECK-NEXT:     return
 // CHECK-NEXT:   }
