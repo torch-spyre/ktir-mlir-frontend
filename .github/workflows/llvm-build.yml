@@ -145,3 +145,4 @@ jobs:
     with:
       mlir-source:     custom
       llvm-short-hash: ${{ needs.get-hash.outputs.llvm-short-hash }}
+      artifact-repo:   ${{ github.repository }}

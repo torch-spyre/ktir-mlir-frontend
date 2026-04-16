@@ -30,6 +30,13 @@ on:
         description: "Short LLVM commit hash (required when mlir-source=custom)"
         required: false
         type: string
+      artifact-repo:
+        description: "Repo to search for the LLVM artifact (owner/repo). When set
+          (e.g. by trigger-ci), the artifact is fetched from that repo directly.
+          When unset, falls back to the parent repo — the normal path for fork PRs
+          whose parent holds the canonical LLVM artifacts."
+        required: false
+        type: string
 
 jobs:
 
@@ -85,30 +92,37 @@ jobs:
             [ -z "$MLIR_SOURCE" ] && MLIR_SOURCE="mlir_wheel"
           fi
 
-          # 3. For custom path: find artifact repo and run-id via GitHub API
+          # 3. For custom path: find artifact repo and run-id via GitHub API.
+          #
+          # Repo resolution:
+          #   - inputs.artifact-repo set (trigger-ci path): use it directly.
+          #     trigger-ci always passes github.repository, so the artifact is
+          #     fetched from whichever repo ran llvm-build (fork or upstream).
+          #   - inputs.artifact-repo unset (fork PR push/PR/workflow_dispatch, or
+          #     workflow_call not originating from trigger-ci): fall back to the
+          #     parent repo, which holds the canonical artifacts.
           if [ "$MLIR_SOURCE" = "custom" ]; then
-            ARTIFACT_REPO=$(curl -sf \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              "https://api.github.com/repos/${{ github.repository }}" \
-              | jq -r '.parent.full_name // .full_name')
+            if [ -n "${{ inputs.artifact-repo }}" ]; then
+              ARTIFACT_REPO="${{ inputs.artifact-repo }}"
+            else
+              ARTIFACT_REPO=$(curl -sf \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository }}" \
+                | jq -r '.parent.full_name // .full_name')
+            fi
 
-            if [ -z "$ARTIFACT_REPO" ]; then
-              echo "::warning::Could not resolve artifact repository for ${{ github.repository }}, falling back to mlir_wheel"
+            ARTIFACT_NAME="llvm-${SHORT_HASH}-${{ matrix.config.os }}-${{ matrix.config.arch }}"
+            RUN_ID=$(curl -sf \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/${ARTIFACT_REPO}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+              | jq -r '.artifacts[0].workflow_run.id // empty')
+
+            if [ -z "$RUN_ID" ]; then
+              echo "::warning::Artifact ${ARTIFACT_NAME} not found in ${ARTIFACT_REPO}, falling back to mlir_wheel"
               MLIR_SOURCE="mlir_wheel"
             else
-              ARTIFACT_NAME="llvm-${SHORT_HASH}-${{ matrix.config.os }}-${{ matrix.config.arch }}"
-              RUN_ID=$(curl -sf \
-                -H "Authorization: Bearer $GH_TOKEN" \
-                "https://api.github.com/repos/${ARTIFACT_REPO}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
-                | jq -r '.artifacts[0].workflow_run.id // empty')
-
-              if [ -z "$RUN_ID" ]; then
-                echo "::warning::Artifact ${ARTIFACT_NAME} not found in ${ARTIFACT_REPO}, falling back to mlir_wheel"
-                MLIR_SOURCE="mlir_wheel"
-              else
-                echo "artifact-repo=${ARTIFACT_REPO}" >> $GITHUB_OUTPUT
-                echo "run-id=${RUN_ID}"               >> $GITHUB_OUTPUT
-              fi
+              echo "artifact-repo=${ARTIFACT_REPO}" >> $GITHUB_OUTPUT
+              echo "run-id=${RUN_ID}"               >> $GITHUB_OUTPUT
             fi
           fi
 
