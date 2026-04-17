@@ -184,7 +184,7 @@ jobs:
             -DKTIR_ENABLE_PYTHON_BINDINGS=OFF \
             -DMLIR_DIR=${{ env.MLIR_DIR }} \
             -DLLVM_EXTERNAL_LIT=${{ env.LIT }} \
-            -DLLVM_LIT_ARGS="-s -v"
+            -DLLVM_LIT_ARGS="-v"  # -v prints each test result; omit -s (succinct) as it suppresses per-test lines
 
       - name: Build
         run: cmake --build build -j$(nproc)
@@ -201,4 +201,4 @@ jobs:
         run: CMAKE_ARGS="-DMLIR_DIR=${{ env.MLIR_DIR }}" uv pip install .
 
       - name: Python test
-        run: uv run --no-project pytest -v python/test/
+        run: uv run --no-project pytest -v python/test/  # -v prints each test id and result
