@@ -31,6 +31,11 @@ wheel.packages = ["python/mlir_ktdp", "python/tools_ktdp"]
 MLIR_BINDINGS_PYTHON_INSTALL_PREFIX = "mlir_ktdp"
 
 [dependency-groups]
+# Dependencies for building the LLVM/MLIR artifacts with
+# -DMLIR_ENABLE_BINDINGS_PYTHON=ON (used in llvm-build.yml).
+# numpy<2 is required by MLIR's check-mlir Python test suite at this
+# LLVM version; numpy 2.x causes a dense-element ABI mismatch.
+# These are NOT used in the ktir build itself.
 llvm-build = ["cmake", "ninja", "sccache", "numpy<2"]
 
 [tool.uv]
