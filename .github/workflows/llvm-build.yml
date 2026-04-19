@@ -73,8 +73,13 @@ jobs:
           path: llvm-project
           ref: ${{ needs.get-hash.outputs.llvm-hash }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Install prerequisites
-        run: python3 -m pip install cmake ninja sccache
+        run: |
+          uv sync --group llvm-build --no-install-project
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
       - name: Enable sccache
         uses: actions/cache@v4
@@ -82,7 +87,11 @@ jobs:
           path: ${{ env.SCCACHE_DIR }}
           key:          ${{ matrix.config.os }}-${{ matrix.config.arch }}-${{ needs.get-hash.outputs.llvm-short-hash }}
           restore-keys: ${{ matrix.config.os }}-${{ matrix.config.arch }}-
+          save-always: true
 
+      # MLIR_ENABLE_BINDINGS_PYTHON=ON exports MLIRPythonSources.Core and related
+      # cmake targets into the install tree. These are required by downstream
+      # consumers (cmake-py-test) to build the ktir Python wheel via scikit-build-core.
       - name: Configure LLVM
         run: >
           cmake -GNinja -B llvm-project/build
@@ -98,7 +107,7 @@ jobs:
           -DLLVM_INSTALL_UTILS=ON
           -DLLVM_ENABLE_ASSERTIONS=ON
           -DLLVM_ENABLE_ZSTD=OFF
-          -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
+          -DMLIR_ENABLE_BINDINGS_PYTHON=ON
           llvm-project/llvm
 
       - name: Build, test, and install LLVM
@@ -136,3 +145,4 @@ jobs:
     with:
       mlir-source:     custom
       llvm-short-hash: ${{ needs.get-hash.outputs.llvm-short-hash }}
+      artifact-repo:   ${{ github.repository }}
