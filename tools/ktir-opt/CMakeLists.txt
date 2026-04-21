@@ -5,10 +5,15 @@ set(LIBS
   ${conversion_libs}
   MLIROptLib
   MLIRKtdp
-  MLIRRegisterAllDialects
-  MLIRRegisterAllPasses
 )
 add_llvm_executable(ktir-opt ktir-opt.cpp)
 
 llvm_update_compile_flags(ktir-opt)
-target_link_libraries(ktir-opt PRIVATE ${LIBS})
+
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+  set(DEPS PRIVATE -Wl,--whole-archive ${LIBS} -Wl,--no-whole-archive)
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+  set(DEPS PRIVATE -Wl,-all_load ${LIBS})
+endif()
+
+target_link_libraries(ktir-opt PRIVATE ${DEPS})
