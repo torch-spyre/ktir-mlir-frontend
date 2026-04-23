@@ -14,7 +14,6 @@ dependencies = [
 ktdp-walk = "tools_ktdp.__main__:main"
 
 [project.optional-dependencies]
-mlir = ["mlir_wheel"]
 test = ["pytest", "lit"]
 
 [tool.scikit-build]
