@@ -55,9 +55,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-mlir = [
-    { name = "mlir-wheel" },
-]
 test = [
     { name = "lit" },
     { name = "pytest" },
@@ -67,6 +64,11 @@ test = [
 llvm-build = [
     { name = "cmake" },
     { name = "ninja" },
+    { name = "sccache" },
+]
+llvm-build-nightly = [
+    { name = "cmake" },
+    { name = "ninja" },
     { name = "numpy" },
     { name = "sccache" },
 ]
@@ -74,14 +76,18 @@ llvm-build = [
 [package.metadata]
 requires-dist = [
     { name = "lit", marker = "extra == 'test'" },
-    { name = "mlir-wheel", marker = "extra == 'mlir'" },
     { name = "nanobind", specifier = ">=2.12.0" },
     { name = "pytest", marker = "extra == 'test'" },
 ]
-provides-extras = ["mlir", "test"]
+provides-extras = ["test"]
 
 [package.metadata.requires-dev]
 llvm-build = [
+    { name = "cmake" },
+    { name = "ninja" },
+    { name = "sccache" },
+]
+llvm-build-nightly = [
     { name = "cmake" },
     { name = "ninja" },
     { name = "numpy", specifier = "<2" },
@@ -95,18 +101,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/47/b4/d7e210971494db7b9a9ac48ff37dfa59a8b14c773f9cf47e6bda58411c0d/lit-18.1.8.tar.gz", hash = "sha256:47c174a186941ae830f04ded76a3444600be67d5e5fb8282c3783fba671c4edb", size = 161127, upload-time = "2024-06-25T14:33:14.489Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/96/06/b36f150fa7c5bcc96a31a4d19a20fddbd1d965b6f02510b57a3bb8d4b930/lit-18.1.8-py3-none-any.whl", hash = "sha256:a873ff7acd76e746368da32eb7355625e2e55a2baaab884c9cc130f2ee0300f7", size = 96365, upload-time = "2024-06-25T14:33:12.101Z" },
-]
-
-[[package]]
-name = "mlir-wheel"
-version = "20260409+3b3ac5a11"
-source = { registry = "https://llvm.github.io/eudsl" }
-wheels = [
-    { url = "https://github.com/llvm/eudsl/releases/download/llvm/mlir_wheel-20260409+3b3ac5a11-py3-none-linux_aarch64.whl" },
-    { url = "https://github.com/llvm/eudsl/releases/download/llvm/mlir_wheel-20260409+3b3ac5a11-py3-none-linux_x86_64.whl" },
-    { url = "https://github.com/llvm/eudsl/releases/download/llvm/mlir_wheel-20260409+3b3ac5a11-py3-none-macosx_12_0_arm64.whl" },
-    { url = "https://github.com/llvm/eudsl/releases/download/llvm/mlir_wheel-20260409+3b3ac5a11-py3-none-win_amd64.whl" },
-    { url = "https://github.com/llvm/eudsl/releases/download/llvm/mlir_wheel-20260409+3b3ac5a11-cp312-cp312-pyemscripten_2024_0_wasm32.whl" },
 ]
 
 [[package]]
