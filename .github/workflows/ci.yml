@@ -51,8 +51,8 @@ jobs:
       matrix:
         config:
           - { runner: "Ubuntu 22.04 x64",   runs-on: "ubuntu-22.04",     os: "ubuntu", arch: "x64"   }
-          # ubuntu-22.04-arm is a GitHub-hosted runner; requires Team or Enterprise plan
-          # - { runner: "Ubuntu 22.04 ARM64",  runs-on: "ubuntu-22.04-arm", os: "ubuntu", arch: "arm64" }
+          - { runner: "macOS 15 ARM64",      runs-on: "macos-15",         os: "macos",  arch: "arm64" }
+          - { runner: "Ubuntu 22.04 ARM64",  runs-on: "ubuntu-22.04-arm", os: "ubuntu", arch: "arm64" }
 
     steps:
       - uses: actions/checkout@v4
@@ -118,7 +118,9 @@ jobs:
               | jq -r '.artifacts[0].workflow_run.id // empty')
 
             if [ -z "$RUN_ID" ]; then
-              echo "::warning::Artifact ${ARTIFACT_NAME} not found in ${ARTIFACT_REPO}, falling back to mlir_wheel"
+              echo "::warning::Artifact ${ARTIFACT_NAME} not found in ${ARTIFACT_REPO}, falling back to mlir_wheel." \
+                "If testing llvm-build on a fork, workflow_call resolves artifact-repo to the parent repo so" \
+                "fork-built artifacts won't be found — use workflow_dispatch and pass artifact-repo to override."
               MLIR_SOURCE="mlir_wheel"
             else
               echo "artifact-repo=${ARTIFACT_REPO}" >> $GITHUB_OUTPUT
