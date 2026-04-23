@@ -1,11 +1,12 @@
 name: LLVM Build
 
 on:
+  schedule:
+    - cron: '0 2 1 */2 *'   # 1st of every other month — refreshes artifact
+                          # well within the 90-day retention window
   push:
     branches: [main]
     paths:
-      # NOTE: for now we will not have this file checked into the repo
-      # - so all tests on this workflow will be limited to dispatch for the moment
       - cmake/llvm-hash.txt
   pull_request:
     paths:
@@ -55,33 +56,76 @@ jobs:
       fail-fast: true
       matrix:
         config:
-          - { runner: "Ubuntu 22.04 x64",   runs-on: "ubuntu-22.04",     os: "ubuntu", arch: "x64"   }
-          # ubuntu-22.04-arm is a GitHub-hosted runner; requires Team or Enterprise plan
-          # - { runner: "Ubuntu 22.04 ARM64",  runs-on: "ubuntu-22.04-arm", os: "ubuntu", arch: "arm64" }
+          - { runner: "Ubuntu 22.04 x64",   runs-on: "ubuntu-22.04",     os: "ubuntu", arch: "x64",   linker: "lld" }
+          - { runner: "macOS 15 ARM64",      runs-on: "macos-15",         os: "macos",  arch: "arm64", linker: ""    }
+          - { runner: "Ubuntu 22.04 ARM64",  runs-on: "ubuntu-22.04-arm", os: "ubuntu", arch: "arm64", linker: "lld" }
 
     steps:
+      - name: Check existing artifact
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARTIFACT_NAME="llvm-${{ needs.get-hash.outputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}"
+          echo "artifact-name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+          ARTIFACT_ID=$(curl -sf \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+            | jq -r '.artifacts[0].id // empty')
+          if [ -n "$ARTIFACT_ID" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "::notice::Artifact ${ARTIFACT_NAME} already exists (id=${ARTIFACT_ID}); skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.check.outputs.exists != 'true'
 
       - name: Set artifact name
-        run: |
-          echo "LLVM_INSTALL_DIR=llvm-${{ needs.get-hash.outputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}" >> $GITHUB_ENV
+        if: steps.check.outputs.exists != 'true'
+        run: echo "LLVM_INSTALL_DIR=${{ steps.check.outputs.artifact-name }}" >> $GITHUB_ENV
 
       - name: Checkout LLVM
+        if: steps.check.outputs.exists != 'true'
         uses: actions/checkout@v4
         with:
           repository: llvm/llvm-project
           path: llvm-project
           ref: ${{ needs.get-hash.outputs.llvm-hash }}
 
+      # Detect whether this commit is a stable release tag (llvmorg-*).
+      # git ls-remote checks the remote directly — no checkout or fetch-tags needed.
+      # Stable builds skip check-mlir and assertions; any regressions in ktir
+      # itself will surface in cmake-py-test.
+      - name: Detect stable build
+        if: steps.check.outputs.exists != 'true'
+        run: |
+          LLVM_HASH="${{ needs.get-hash.outputs.llvm-hash }}"
+          if git ls-remote https://github.com/llvm/llvm-project 'refs/tags/llvmorg-*^{}' \
+               | grep -q "^${LLVM_HASH}"; then
+            echo "IS_STABLE_BUILD=true"  >> $GITHUB_ENV
+          else
+            echo "IS_STABLE_BUILD=false" >> $GITHUB_ENV
+          fi
+
       - name: Install uv
+        if: steps.check.outputs.exists != 'true'
         uses: astral-sh/setup-uv@v5
 
       - name: Install prerequisites
+        if: steps.check.outputs.exists != 'true'
         run: |
-          uv sync --group llvm-build --no-install-project
+          # numpy<2 is only needed for check-mlir's Python tests; stable builds skip it
+          if [ "$IS_STABLE_BUILD" = "true" ]; then
+            uv sync --group llvm-build --no-install-project
+          else
+            uv sync --group llvm-build-nightly --no-install-project
+          fi
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
       - name: Enable sccache
+        if: steps.check.outputs.exists != 'true'
         uses: actions/cache@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
@@ -93,45 +137,65 @@ jobs:
       # cmake targets into the install tree. These are required by downstream
       # consumers (cmake-py-test) to build the ktir Python wheel via scikit-build-core.
       - name: Configure LLVM
-        run: >
-          cmake -GNinja -B llvm-project/build
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_C_COMPILER=clang
-          -DCMAKE_CXX_COMPILER=clang++
-          -DCMAKE_C_COMPILER_LAUNCHER=sccache
-          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          -DCMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}"
-          -DLLVM_ENABLE_PROJECTS="mlir;llvm"
-          -DLLVM_TARGETS_TO_BUILD="host"
-          -DLLVM_BUILD_UTILS=ON
-          -DLLVM_INSTALL_UTILS=ON
-          -DLLVM_ENABLE_ASSERTIONS=ON
-          -DLLVM_ENABLE_ZSTD=OFF
-          -DMLIR_ENABLE_BINDINGS_PYTHON=ON
-          llvm-project/llvm
+        if: steps.check.outputs.exists != 'true'
+        run: |
+          CMAKE_ARGS=(
+            -GNinja -B llvm-project/build
+            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_C_COMPILER=clang
+            -DCMAKE_CXX_COMPILER=clang++
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            -DCMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}"
+            -DLLVM_ENABLE_PROJECTS="mlir"
+            -DLLVM_TARGETS_TO_BUILD="host"
+            -DLLVM_BUILD_UTILS=ON
+            -DLLVM_INSTALL_UTILS=ON
+            -DLLVM_ENABLE_ZSTD=OFF
+            -DLLVM_ENABLE_TERMINFO=OFF
+            -DLLVM_ENABLE_LIBXML2=OFF
+            -DMLIR_ENABLE_BINDINGS_PYTHON=ON
+            # Use uv-managed Python so MLIRDetectPythonEnv finds nanobind on all platforms
+            -DPython3_EXECUTABLE="$(uv python find)"
+          )
+          # lld is 2-4x faster than GNU ld for linking; leave empty on macOS (ld64 is fast on ARM64)
+          [ -n "${{ matrix.config.linker }}" ] && CMAKE_ARGS+=( -DLLVM_USE_LINKER="${{ matrix.config.linker }}" )
+          if [ "$IS_STABLE_BUILD" = "true" ]; then
+            CMAKE_ARGS+=(
+              -DLLVM_INCLUDE_TESTS=OFF
+              -DLLVM_INCLUDE_EXAMPLES=OFF
+              -DLLVM_INCLUDE_BENCHMARKS=OFF
+            )
+          else
+            # Assertions catch MLIR internal invariant violations in nightly builds;
+            # unnecessary overhead for a vetted stable tag.
+            CMAKE_ARGS+=( -DLLVM_ENABLE_ASSERTIONS=ON )
+          fi
+          cmake "${CMAKE_ARGS[@]}" llvm-project/llvm
 
-      - name: Build, test, and install LLVM
-        run: ninja -C llvm-project/build check-mlir install
+      - name: Build and install LLVM
+        if: steps.check.outputs.exists != 'true'
+        run: |
+          if [ "$IS_STABLE_BUILD" = "true" ]; then
+            ninja -C llvm-project/build install
+          else
+            ninja -C llvm-project/build check-mlir install
+          fi
 
       - name: Package
+        if: steps.check.outputs.exists != 'true'
         run: tar czf "${{ env.LLVM_INSTALL_DIR }}.tar.gz" "${{ env.LLVM_INSTALL_DIR }}"
 
       - name: Upload artifact
+        if: steps.check.outputs.exists != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.LLVM_INSTALL_DIR }}
           path: ${{ env.LLVM_INSTALL_DIR }}.tar.gz
-          # Artifacts are only needed to pass to ci.yml immediately after this
-          # workflow completes. 3 days covers manual reruns without accumulating
-          # storage over the 90-day default.
-          retention-days: 3
-          # Without overwrite, re-running with the same hash creates duplicate
-          # artifacts with the same name. download-artifact@v4 then becomes
-          # ambiguous when triggered outside of this workflow (e.g. workflow_dispatch
-          # on ci.yml). overwrite keeps exactly one artifact per hash/os/arch.
-          overwrite: true
+          retention-days: 90
 
       - name: Dump sccache statistics
+        if: steps.check.outputs.exists != 'true'
         run: sccache --show-stats
 
   # Trigger CI against the freshly built LLVM artifact.
@@ -146,3 +210,69 @@ jobs:
       mlir-source:     custom
       llvm-short-hash: ${{ needs.get-hash.outputs.llvm-short-hash }}
       artifact-repo:   ${{ github.repository }}
+
+  # Refresh the artifact on a schedule to reset the 90-day retention clock.
+  # Downloads the existing artifact zip and re-uploads it — a full rebuild is
+  # unnecessary since the content is identical.  trigger-ci is NOT called after
+  # a refresh (artifact content unchanged).
+  refresh:
+    name: Refresh artifact (${{ matrix.config.runner }})
+    needs: get-hash
+    if: ${{ needs.get-hash.outputs.llvm-hash != '' && github.event_name == 'schedule' }}
+    runs-on: ${{ matrix.config.runs-on }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { runner: "Ubuntu 22.04 x64",   runs-on: "ubuntu-22.04",     os: "ubuntu", arch: "x64"   }
+          - { runner: "macOS 15 ARM64",      runs-on: "macos-15",         os: "macos",  arch: "arm64" }
+          - { runner: "Ubuntu 22.04 ARM64",  runs-on: "ubuntu-22.04-arm", os: "ubuntu", arch: "arm64" }
+
+    steps:
+      - name: Check existing artifact
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARTIFACT_NAME="llvm-${{ needs.get-hash.outputs.llvm-short-hash }}-${{ matrix.config.os }}-${{ matrix.config.arch }}"
+          echo "artifact-name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+          ARTIFACT_ID=$(curl -sf \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+            | jq -r '.artifacts[0].id // empty')
+          if [ -n "$ARTIFACT_ID" ]; then
+            echo "artifact-id=${ARTIFACT_ID}" >> $GITHUB_OUTPUT
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "::warning::Artifact ${ARTIFACT_NAME} not found; cannot refresh — a rebuild may be needed"
+          fi
+
+      - name: Download artifact zip
+        if: steps.check.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -L -sf \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ steps.check.outputs.artifact-id }}/zip" \
+            -o artifact.zip
+          unzip artifact.zip
+
+      - name: Re-upload artifact (reset 90-day clock)
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.check.outputs.artifact-name }}
+          path: ${{ steps.check.outputs.artifact-name }}.tar.gz
+          retention-days: 90
+
+      - name: Delete old artifact
+        if: steps.check.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sf -X DELETE \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ steps.check.outputs.artifact-id }}"
