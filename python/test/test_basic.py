@@ -127,7 +127,7 @@ def test_dialect_registration():
     (SIMPLE_MODULE,              SIMPLE_MODULE_OPS),
     (KTDP_BASIC_MODULE,          KTDP_BASIC_MODULE_OPS),
     (KTDP_CONTROL_FLOW_MODULE,   KTDP_CONTROL_FLOW_MODULE_OPS),
-])
+], ids=["simple", "ktdp_basic", "ktdp_control_flow"])
 def test_walk(source, expected):
     ops = walk_module(source)
     assert [(op.name, depth) for op, depth in ops] == expected

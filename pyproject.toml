@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core", "nanobind>=2.12.0", "mlir_wheel"]
+requires = ["scikit-build-core", "nanobind>=2.12.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -14,7 +14,6 @@ dependencies = [
 ktdp-walk = "tools_ktdp.__main__:main"
 
 [project.optional-dependencies]
-mlir = ["mlir_wheel"]
 test = ["pytest", "lit"]
 
 [tool.scikit-build]
@@ -29,6 +28,14 @@ wheel.packages = ["python/mlir_ktdp", "python/tools_ktdp"]
 
 [tool.scikit-build.cmake.define]
 MLIR_BINDINGS_PYTHON_INSTALL_PREFIX = "mlir_ktdp"
+
+[dependency-groups]
+# Base build tools for all LLVM builds (stable and nightly).
+llvm-build = ["cmake", "ninja", "sccache"]
+# numpy<2 is additionally required by check-mlir's Python test suite (nightly only).
+# numpy 2.x causes a dense-element ABI mismatch with MLIR at this LLVM version.
+# Stable builds skip check-mlir, so they use llvm-build directly.
+llvm-build-nightly = [{include-group = "llvm-build"}, "numpy<2"]
 
 [tool.uv]
 find-links = ["https://llvm.github.io/eudsl"]

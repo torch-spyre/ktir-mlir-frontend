@@ -69,26 +69,31 @@ drive CMake and produce a wheel. First, create a venv:
 uv venv --python 3.12
 ```
 
-#### With mlir_wheel (recommended)
+Use `scripts/setup_mlir.py` to obtain the MLIR installation, then build:
 
 ```bash
-uv sync --extra mlir           # installs deps and builds the project (editable)
-uv sync --extra mlir --extra test  # also installs pytest and lit
-```
-
-`mlir_wheel` provides the MLIR CMake config so no extra flags are needed.
-`uv sync` installs the project in editable mode — edits to `tools_ktdp/` are
-reflected immediately; changes to `mlir_ktdp/` or C++ require a rebuild.
-
-#### With a custom MLIR build (no mlir_wheel)
-
-`uv sync` would fail without `mlir_wheel` because cmake cannot find MLIR.
-Install deps only, then build manually with `MLIR_DIR` set:
-
-```bash
+# Install Python test dependencies (pytest and lit)
 uv sync --no-install-project --extra test
-CMAKE_ARGS="-DMLIR_DIR=/path/to/llvm-build/lib/cmake/mlir" uv pip install .
+
+# Resolve MLIR.
+# Skip this if you already have a local LLVM/MLIR build — just set MLIR_DIR
+# directly: export MLIR_DIR=/path/to/llvm-build/lib/cmake/mlir
+#
+# Otherwise, setup_mlir.py downloads the pinned artifact (cached at
+# ~/.cache/ktir-mlir/) or falls back to mlir_wheel.
+# A GIT_PAT or GITHUB_TOKEN is required on the first download; subsequent
+# runs use the cache and need no token.
+MLIR_DIR=$(uv run --no-project python scripts/setup_mlir.py)
+
+# Force mlir_wheel (no token required, always fetches latest):
+MLIR_DIR=$(uv run --no-project python scripts/setup_mlir.py --wheel)
+
+# Build and install the Python wheel
+CMAKE_ARGS="-DMLIR_DIR=$MLIR_DIR" uv pip install .
 ```
+
+See [docs/ci.md](docs/ci.md) for the full local development workflow including
+cache behaviour and fork setup.
 
 ## Running Tests
 
