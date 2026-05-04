@@ -25,8 +25,7 @@ def Ktdp_SpyreMemorySpaceKind : I32EnumAttr<
     [
       I32EnumAttrCase<"unspecified", 0, "unspecified">,
       I32EnumAttrCase<"LX",  1, "LX">,
-      I32EnumAttrCase<"HBM", 2, "HBM">,
-      I32EnumAttrCase<"L0",  3, "L0">
+      I32EnumAttrCase<"HBM", 2, "HBM">
     ]> {
   let cppNamespace = "::mlir::ktdp";
   let genSpecializedAttr = 0;
@@ -55,11 +54,10 @@ def Ktdp_MemorySpaceAttr : AttrInterface<"KtdpMemorySpaceAttr"> {
 // Assembly syntax:
 //   #ktdp.spyre_memory_space<HBM>
 //   #ktdp.spyre_memory_space<LX, core = 7>
-//   #ktdp.spyre_memory_space<L0>
 //   #ktdp.spyre_memory_space<unspecified>
 //
 // Parameters:
-//   value  -- SpyreMemorySpaceKind enum (unspecified | LX | HBM | L0)
+//   value  -- SpyreMemorySpaceKind enum (unspecified | LX | HBM)
 //   core   -- optional core affinity (default -1 = unspecified)
 //===----------------------------------------------------------------------===//
 
@@ -75,10 +73,9 @@ def Ktdp_SpyreMemorySpaceAttr
     - `unspecified` -- memory space not yet determined.
     - `LX`  -- shared on-chip scratchpad (cross-core accessible).
     - `HBM` -- high-bandwidth off-chip memory.
-    - `L0`  -- per-core on-chip scratchpad.
 
     The optional `core` parameter identifies which compute core's local
-    memory is referenced (relevant for `LX` and `L0`).
+    memory is referenced (relevant for `LX`).
 
     Examples:
     ```mlir

@@ -42,7 +42,7 @@ func.func @bad_distributed_rank(%a: memref<32x64xf16>, %b: memref<64xf16>) -> me
 #set_bad = affine_set<(d0, d1) : (d0 >= 0, -d0 + 31 >= 0, d1 >= 0, -d1 + 63 >= 0)>
 func.func @bad_core_affinity_hbm(%addr: index) -> memref<32x64xf16> {
   %view = ktdp.construct_memory_view %addr, sizes: [32, 64], strides: [64, 1] {
-    // expected-error @+1 {{core affinity is only valid for LX or L0 memory spaces}}
+    // expected-error @+1 {{core affinity is only valid for LX memory spaces}}
     coordinate_set = #set_bad, memory_space = #ktdp.spyre_memory_space<HBM, core = 3>
   } : memref<32x64xf16>
   return %view : memref<32x64xf16>

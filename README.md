@@ -21,7 +21,7 @@ The `ktdp` dialect models tile-based, data-parallel kernels targeting multi-core
 
 Custom types: `!ktdp.access_tile<NxMxindex>`, `!ktdp.runtime_arg<type, granularity=N, upperbound=M>`
 
-Memory spaces: `#ktdp.spyre_memory_space<HBM>`, `<LX, core=7>`, `<L0>`, `<unspecified>`
+Memory spaces: `#ktdp.spyre_memory_space<HBM>`, `<LX, core=7>`, `<unspecified>`
 
 ## How to Build
 
