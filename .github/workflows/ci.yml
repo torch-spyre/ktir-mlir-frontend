@@ -143,7 +143,7 @@ jobs:
       # it via CMAKE_ARGS so both mlir_wheel and custom LLVM paths are uniform.
 
       - name: Build and install Python wheel
-        run: CMAKE_ARGS="-DMLIR_DIR=${{ env.MLIR_DIR }}" uv sync --extra test
+        run: CMAKE_ARGS="-DMLIR_DIR=${{ env.MLIR_DIR }}" uv sync --extra test --inexact
 
       - name: Python test
         run: uv run --no-project pytest -v python/test/  # -v prints each test id and result

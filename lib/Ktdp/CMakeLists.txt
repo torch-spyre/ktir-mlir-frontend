@@ -1,20 +1,29 @@
-add_mlir_dialect_library(MLIRKtdp
-        KtdpDialect.cpp
-        KtdpAttrs.cpp
-        KtdpOps.cpp
-        KtdpTypes.cpp
+add_ktir_library(KTIRKtdpDialect
+    KtdpAttrs.cpp
+    KtdpDialect.cpp
+    KtdpOps.cpp
+    KtdpTypes.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/Ktdp
-  ${PROJECT_BINARY_DIR}/include/
+    ${PROJECT_SOURCE_DIR}/include/Ktdp
+    ${PROJECT_BINARY_DIR}/include/Ktdp
+
+  GROUP DIALECT
+  EXPORT_NAME KtdpDialect
 
   DEPENDS
-  MLIRKtdpDialectIncGen
-  MLIRKtdpAttrsIncGen
-  MLIRKtdpTypesIncGen
-  MLIRKtdpOpsIncGen
+    KTIRKtdpAttrInterfacesIncGen
+    KTIRKtdpAttrsIncGen
+    KTIRKtdpOpsIncGen
+)
 
-  LINK_LIBS PUBLIC
+mlir_target_link_libraries(KTIRKtdpDialect PUBLIC
   MLIRIR
   MLIRInferTypeOpInterface
+  MLIRAffineDialect
+  MLIRMemRefDialect
+  MLIRTensorDialect
+  MLIRSCFDialect
+  MLIRFuncDialect
+  MLIRArithDialect
 )

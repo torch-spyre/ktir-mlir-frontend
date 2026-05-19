@@ -37,6 +37,20 @@ cmake -S . -B build -GNinja -DMLIR_DIR=/path/to/llvm-build/lib/cmake/mlir
 cmake --build build -j$(nproc)
 ```
 
+The following CMake variables can be configured:
+
+|              Name | Type      | Description |
+| ----------------: | :-------- | --- |
+| `MLIR_DIR` <br/>*(required)* | `STRING` | Path to the CMake directory of an **MLIR** installation. <br/> *e.g. `~/tools/llvm-12.0.1/lib/cmake/mlir`* |
+| `LLVM_EXTERNAL_LIT` <br/>*(optional)* | `STRING` | Path to a `lit` executable, required for testing. |
+| `KTIR_ENABLE_PYTHON_BINDINGS` <br/>*(default: `OFF`)* | `BOOL` | Whether to build the Python bindings. |
+| `KTIR_BUILD_TOOLS` <br/>*(default: `ON`)* | `BOOL` | Whether to build the tool executables. |
+| `MLIR_LINK_MLIR_DYLIB` <br/>*(optional)* | `BOOL` | Whether to link against a shared MLIR library. |
+
+#### **Linking against shared LLVM/MLIR**
+
+This project supports linking against a version of LLVM/MLIR that was build using the `LLVM_BUILD_LLVM_DYLIB` etc. flags. Since MLIR does not export the `MLIR_LINK_MLIR_DYLIB` flag, it is inferred from the presence of the `MLIR` library target when it is not specified at configure time. When linking against shared MLIR, CMake will set up an RPATH to your MLIR install destination.
+
 ### CMake with Python bindings
 
 > **Note:** The recommended way to build Python bindings is via `uv sync`, see the next section.
@@ -164,6 +178,7 @@ include/
 lib/
   Ktdp/                    # Dialect implementation
 tools/
+  ktir-lsp-server/         # MLIR LSP server
   ktir-opt/                # Optimizer driver tool
 test/
   Ktdp/                    # 17 LIT test files
