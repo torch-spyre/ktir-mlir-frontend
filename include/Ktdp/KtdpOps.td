@@ -230,8 +230,11 @@ def KTDP_ConstructDistributedMemoryViewOp : Ktdp_Op<"construct_distributed_memor
 }
 
 // Access Tiles
-def KTDP_ConstructAccessTilesOp : Ktdp_Op<"construct_access_tile",
-        [AttrSizedOperandSegments, Pure]> {
+def KTDP_ConstructAccessTilesOp : Ktdp_Op<"construct_access_tile", [
+      AttrSizedOperandSegments, 
+      ViewLikeOpInterface, 
+      Pure
+    ]> {
 
   let summary = "Operation to construct access tiles over a tensor or memref objects.";
   let hasVerifier = 1;
@@ -295,12 +298,20 @@ def KTDP_ConstructAccessTilesOp : Ktdp_Op<"construct_access_tile",
     static StringRef getBaseMapAttrStrName() { return "base_map"; }
     static StringRef getAccessTileSetAttrStrName() { return "access_tile_set"; }
     static StringRef getAccessTileOrderAttrStrName() { return "access_tile_order"; }
+
+    //===------------------------------------------------------------------===//
+    // ViewLikeOpInterface
+    //===------------------------------------------------------------------===//
+
+    Value getViewSource() { return getBase(); }
   }];
 }
 
-def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_tile",
-        [AttrSizedOperandSegments,SingleBlockImplicitTerminator<"ktdp::RegionTerminatorOp">,
-         DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
+def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_tile", [
+      AttrSizedOperandSegments, 
+      ViewLikeOpInterface,
+      SingleBlockImplicitTerminator<"ktdp::RegionTerminatorOp">,
+    ]> {
 
   let summary = "Operation to construct access tiles over a tensor or memref objects.";
   let hasVerifier = 1;
@@ -384,7 +395,7 @@ def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_til
   let arguments = (ins AnyTypeOf<[AnyMemRef,AnyTensor]>:$base,
                        ArrayAttr:$per_dim_subscript_kinds,
                        ArrayAttr:$per_dim_subscript_maps,
-                       Variadic<AnyMemRef>:$indirect_memrefs,
+                       Arg<Variadic<AnyMemRef>, "", [MemRead]>:$indirect_memrefs,
                        Variadic<Index>:$captured_variables,
                        Variadic<Index>:$symbol_operands,
                        Builtin_IntegerSetAttr:$variables_space_set,
@@ -413,12 +424,17 @@ def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_til
     static StringRef getVariablesSpaceSetAttrStrName() { return "variables_space_set"; }
     static StringRef getVariablesSpaceOrderAttrStrName() { return "variables_space_order"; }
     ValueRange getIntermediateVariables() { return getRegion().getArguments(); }
+
+    //===------------------------------------------------------------------===//
+    // ViewLikeOpInterface
+    //===------------------------------------------------------------------===//
+
+    Value getViewSource() { return getBase(); }
   }];
 }
 
 // Load operation
-def KTDP_LoadOp : Ktdp_Op<"load",
-        [DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
+def KTDP_LoadOp : Ktdp_Op<"load"> {
 
   let summary = "Operation to load data based on the coordinates from access_tile.";
     let description = [{
@@ -443,7 +459,7 @@ def KTDP_LoadOp : Ktdp_Op<"load",
       ```
     }];
 
-  let arguments = (ins Ktdp_AccessTileType:$access_tile);
+  let arguments = (ins Arg<Ktdp_AccessTileType, "", [MemRead]>:$access_tile);
   let results = (outs AnyTensor:$result);
     let assemblyFormat = [{
       $access_tile attr-dict `:` type($access_tile) `->` type(results)
@@ -458,8 +474,7 @@ def KTDP_LoadOp : Ktdp_Op<"load",
 }
 
 // Store operation
-def KTDP_StoreOp : Ktdp_Op<"store",
-        [DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
+def KTDP_StoreOp : Ktdp_Op<"store"> {
 
   let summary = "Operation to store data based on the coordinates from access_tile.";
     let description = [{
@@ -491,7 +506,7 @@ def KTDP_StoreOp : Ktdp_Op<"store",
       ```
     }];
 
-  let arguments = (ins AnyTensor:$data_tile, Ktdp_AccessTileType:$access_tile);
+  let arguments = (ins AnyTensor:$data_tile, Arg<Ktdp_AccessTileType, "", [MemWrite]>:$access_tile);
     let assemblyFormat = [{
       $data_tile `,` $access_tile attr-dict `:` type($data_tile) `,` type($access_tile)
     }];
