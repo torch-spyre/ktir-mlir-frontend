@@ -233,16 +233,15 @@ jobs:
           )
           # lld is 2-4x faster than GNU ld for linking; leave empty on macOS (ld64 is fast on ARM64)
           [ -n "${{ matrix.config.linker }}" ] && CMAKE_ARGS+=( -DLLVM_USE_LINKER="${{ matrix.config.linker }}" )
+          # Assertions enabled for all builds: active in MLIR code regardless of
+          # whether the LLVM hash is a stable tag or a nightly.
+          CMAKE_ARGS+=( -DLLVM_ENABLE_ASSERTIONS=ON )
           if [ "$IS_STABLE_BUILD" = "true" ]; then
             CMAKE_ARGS+=(
               -DLLVM_INCLUDE_TESTS=OFF
               -DLLVM_INCLUDE_EXAMPLES=OFF
               -DLLVM_INCLUDE_BENCHMARKS=OFF
             )
-          else
-            # Assertions catch MLIR internal invariant violations in nightly builds;
-            # unnecessary overhead for a vetted stable tag.
-            CMAKE_ARGS+=( -DLLVM_ENABLE_ASSERTIONS=ON )
           fi
           cmake "${CMAKE_ARGS[@]}" llvm-project/llvm
 
