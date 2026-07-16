@@ -7,12 +7,18 @@ configure_lit_site_cfg(
 
 set(KTIR_TEST_DEPENDS
   ktir-opt
+  FileCheck
 )
 
 add_lit_testsuite(check-ktir "Running the KTIR regression tests"
-  ${CMAKE_CURRENT_BINARY_DIR}
-  DEPENDS ${KTIR_TEST_DEPENDS}
+    ${CMAKE_CURRENT_BINARY_DIR}
+  DEPENDS 
+    ${KTIR_TEST_DEPENDS}
 )
 set_target_properties(check-ktir PROPERTIES FOLDER "Tests")
 
-add_lit_testsuites(KTIR . DEPENDS ${KTIR_TEST_DEPENDS})
+add_lit_testsuites(KTIR 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS ${KTIR_TEST_DEPENDS}
+  BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}
+)

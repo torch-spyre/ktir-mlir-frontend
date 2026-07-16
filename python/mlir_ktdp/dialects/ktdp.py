@@ -3,4 +3,5 @@
 #  SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from ._ktdp_ops_gen import *
-from .._mlir_libs._ktdpDialectsNanobind.ktdp import *
+from .._mlir_libs._ktir import *
+from .._mlir_libs._ktir.ktdp import *

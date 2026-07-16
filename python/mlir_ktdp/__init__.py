@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mlir_ktdp.ir import * # e.g., Context, Module, Location, Block
-from mlir_ktdp.dialects import ktdp_nanobind as ktdp_d
+from .ir import *  # e.g., Context, Module, Location, Block
+from .dialects import ktdp

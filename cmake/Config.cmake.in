@@ -1,0 +1,36 @@
+@PACKAGE_INIT@
+
+#
+# Exported targets
+#
+
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+
+#
+# Umbrella targets
+#
+
+if(NOT TARGET ktir-capi)
+  add_custom_target(ktir-capi)
+endif()
+if(NOT TARGET ktir-doc)
+  add_custom_target(ktir-doc)
+endif()
+if(NOT TARGET ktir-headers)
+  add_custom_target(ktir-headers)
+endif()
+
+#
+# Exported variables
+#
+
+set(KTIR_ENABLE_PYTHON_BINDINGS @KTIR_ENABLE_PYTHON_BINDINGS@)
+
+set(KTIR_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
+
+set_property(GLOBAL PROPERTY KTIR_DIALECT_LIBS "@KTIR_DIALECT_LIBS@")
+set_property(GLOBAL PROPERTY KTIR_CONVERSION_LIBS "@KTIR_CONVERSION_LIBS@")
+set_property(GLOBAL PROPERTY KTIR_EXTENSION_LIBS "@KTIR_EXTENSION_LIBS@")
+set_property(GLOBAL PROPERTY KTIR_TRANSLATION_LIBS "@KTIR_TRANSLATION_LIBS@")
+
+check_required_components(@PROJECT_NAME@)

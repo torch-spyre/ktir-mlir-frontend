@@ -1,14 +1,26 @@
-get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
-set(LIBS
-  ${dialect_libs}
-  ${conversion_libs}
+# Get the names of all relevant exported KTIR targets.
+get_property(_dialect_libs GLOBAL PROPERTY ${PROJECT_NAME}_DIALECT_LIBS)
+get_property(_extension_libs GLOBAL PROPERTY ${PROJECT_NAME}_EXTENSION_LIBS)
+get_property(_conversion_libs GLOBAL PROPERTY ${PROJECT_NAME}_CONVERSION_LIBS)
+
+add_ktir_tool(ktir-opt 
+    ktir-opt.cpp
+
+  EXPORT_NAME opt
+
+  SUPPORT_PLUGINS
+)
+target_link_libraries(ktir-opt PRIVATE
+  ${_dialect_libs}
+  ${_extension_libs}
+  ${_conversion_libs}
+)
+
+mlir_target_link_libraries(ktir-opt PRIVATE
   MLIROptLib
-  MLIRKtdp
   MLIRRegisterAllDialects
   MLIRRegisterAllPasses
+  MLIRRegisterAllExtensions
 )
-add_llvm_executable(ktir-opt ktir-opt.cpp)
-
 llvm_update_compile_flags(ktir-opt)
-target_link_libraries(ktir-opt PRIVATE ${LIBS})
+export_executable_symbols_for_plugins(ktir-opt)

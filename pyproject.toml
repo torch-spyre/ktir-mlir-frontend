@@ -19,7 +19,7 @@ test = ["pytest", "lit"]
 [tool.scikit-build]
 cmake.build-type = "Release"
 cmake.args = ["-DKTIR_ENABLE_PYTHON_BINDINGS=ON", "-GNinja"]
-install.components = ["KtdpPythonModules"]
+install.components = ["KTIRPythonModules"]
 # mlir_ktdp/ is fully cmake-managed (extensions + MLIR-generated Python).
 # ktdp_tools/ is pure-Python, NOT managed by cmake, so scikit-build-core
 # handles it here.  In editable installs this gives ktdp_tools a live source

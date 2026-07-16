@@ -18,14 +18,14 @@ Utilities for inspecting KTIR modules.
 
 from contextlib import contextmanager
 from mlir_ktdp.ir import Context, Module
-from mlir_ktdp.dialects import ktdp_nanobind as ktdp_d
+import mlir_ktdp.dialects.ktdp as ktdp
 
 
 @contextmanager
 def ktdp_context():
     """Context manager that creates an MLIR context with KTDP dialects registered."""
     with Context() as ctx:
-        ktdp_d.register_dialects(ctx)
+        ktdp.register_dialects(ctx)
         yield ctx
 
 

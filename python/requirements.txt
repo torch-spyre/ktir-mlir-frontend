@@ -1,0 +1,2 @@
+# This requirement is inherited transitively from MLIR.
+nanobind>=2.12, <3.0

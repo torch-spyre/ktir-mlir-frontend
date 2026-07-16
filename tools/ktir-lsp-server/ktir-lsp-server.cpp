@@ -1,11 +1,10 @@
-//===- ktir-opt.cpp - KTIR MLIR optimizer driver ----------------*- C++ -*-===//
+//===- ktir-lsp-server.cpp - KTIR LSP server --------------------*- C++ -*-===//
 //
 //===----------------------------------------------------------------------===//
 
-#include <mlir/IR/MLIRContext.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllExtensions.h>
-#include <mlir/InitAllPasses.h>
+#include <mlir/Tools/mlir-lsp-server/MlirLspServerMain.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
 #include "Ktdp/KtdpDialect.hpp"
@@ -13,13 +12,10 @@
 using namespace mlir;
 
 auto main(int argc, char **argv) -> int {
-  registerAllPasses();
-
   DialectRegistry registry;
   registry.insert<ktdp::KtdpDialect>();
   registerAllDialects(registry);
   registerAllExtensions(registry);
 
-  return asMainReturnCode(
-      MlirOptMain(argc, argv, "KTIR modular optimizer driver\n", registry));
+  return asMainReturnCode(MlirLspServerMain(argc, argv, registry));
 }

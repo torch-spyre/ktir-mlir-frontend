@@ -16,7 +16,7 @@
 #include "mlir/IR/DialectImplementation.h"
 
 // Generated dialect definitions
-#include "Ktdp/KtdpDialect.cpp.inc"
+#include "Ktdp/KtdpOpsDialect.cpp.inc"
 
 // Generated enum definitions
 #include "Ktdp/KtdpEnums.cpp.inc"
@@ -30,7 +30,7 @@
 
 // Generated type definitions
 #define GET_TYPEDEF_CLASSES
-#include "Ktdp/KtdpTypes.cpp.inc"
+#include "Ktdp/KtdpOpsTypes.cpp.inc"
 
 using namespace mlir;
 using namespace mlir::ktdp;
