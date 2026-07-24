@@ -15,13 +15,13 @@
 #include "mlir-c/Dialect/Tensor.h"
 #include "mlir/Bindings/Python/IRCore.h"
 #include "mlir/Bindings/Python/IRTypes.h"
-#include "mlir/Bindings/Python/Nanobind.h"
-#include "mlir/Bindings/Python/NanobindAdaptors.h"
 
 namespace nb = nanobind;
+namespace py = mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN;
 
-struct PyAccessTileType
-    : mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::PyConcreteType<PyAccessTileType, mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::PyShapedType> {
+namespace mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::ktdp {
+
+struct PyAccessTileType : PyConcreteType<PyAccessTileType, PyShapedType> {
   static constexpr IsAFunctionTy isaFunction = mlirKtdpTypeIsAAccessTileType;
   static constexpr GetTypeIDFunctionTy getTypeIdFunction =
       mlirKtdpAccessTileTypeGetTypeID;
@@ -32,7 +32,7 @@ struct PyAccessTileType
     c.def_static(
         "get",
         [](std::vector<int64_t> shape, MlirType elementType,
-           mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::DefaultingPyMlirContext context) {
+              DefaultingPyMlirContext context) {
           return PyAccessTileType(
               context->getRef(),
               mlirKtdpAccessTileTypeGet(
@@ -44,8 +44,7 @@ struct PyAccessTileType
 
 };
 
-struct PyRuntimeArgType
-    : mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::PyConcreteType<PyRuntimeArgType, mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::PyType> {
+struct PyRuntimeArgType : PyConcreteType<PyRuntimeArgType, PyType> {
   static constexpr IsAFunctionTy isaFunction = mlirKtdpTypeIsARuntimeArgType;
   static constexpr GetTypeIDFunctionTy getTypeIdFunction =
       mlirKtdpRuntimeArgTypeGetTypeID;
@@ -56,8 +55,7 @@ struct PyRuntimeArgType
     c.def_static(
         "get",
         [](MlirType underlyingType, std::optional<int64_t> granularity,
-           std::optional<int64_t> upperbound,
-           mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::DefaultingPyMlirContext context) {
+              std::optional<int64_t> upperbound, DefaultingPyMlirContext context) {
           return PyRuntimeArgType(
               context->getRef(),
               mlirKtdpRuntimeArgTypeGet(
@@ -83,6 +81,8 @@ struct PyRuntimeArgType
   }
 };
 
+} // namespace mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::ktdp
+
 //===----------------------------------------------------------------------===//
 // _ktir Module
 //===----------------------------------------------------------------------===//
@@ -90,9 +90,7 @@ struct PyRuntimeArgType
 NB_MODULE(_ktir, m) {
   m.def(
       "register_dialects",
-      [](mlir::python::MLIR_BINDINGS_PYTHON_DOMAIN::DefaultingPyMlirContext
-             context,
-         bool load) {
+      [](py::DefaultingPyMlirContext context, bool load) {
         MlirContext context_ = context.get()->get();
         for (auto handle : {
             mlirGetDialectHandle__arith__(),
@@ -115,6 +113,6 @@ NB_MODULE(_ktir, m) {
   //===--------------------------------------------------------------------===//
 
   auto ktdp = m.def_submodule("ktdp");
-  PyAccessTileType::bind(ktdp);
-  PyRuntimeArgType::bind(ktdp);
+  py::ktdp::PyAccessTileType::bind(ktdp);
+  py::ktdp::PyRuntimeArgType::bind(ktdp);
 }
