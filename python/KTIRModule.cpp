@@ -31,7 +31,7 @@ struct PyAccessTileType : PyConcreteType<PyAccessTileType, PyShapedType> {
   static void bindDerived(ClassTy &c) {
     c.def_static(
         "get",
-        [](std::vector<int64_t> shape, MlirType elementType,
+        [](std::vector<int64_t> shape, MlirType elementType, 
               DefaultingPyMlirContext context) {
           return PyAccessTileType(
               context->getRef(),
@@ -39,7 +39,7 @@ struct PyAccessTileType : PyConcreteType<PyAccessTileType, PyShapedType> {
                   shape.size(), shape.data(),
                   elementType));
         },
-        nb::arg("shape"), nb::arg("element_type"), nb::arg("context").none() = nb::none());
+        nb::arg("shape"), nb::arg("element_type"), nb::arg("context") = nb::none());
   }
 
 };
@@ -64,9 +64,9 @@ struct PyRuntimeArgType : PyConcreteType<PyRuntimeArgType, PyType> {
                   upperbound.value_or(-1)));
         },
         nb::arg("underlying_type"),
-        nb::arg("granularity").none() = nb::none(),
-        nb::arg("upperbound").none() = nb::none(),
-        nb::arg("context").none() = nb::none());
+        nb::arg("granularity") = nb::none(),
+        nb::arg("upperbound") = nb::none(),
+        nb::arg("context") = nb::none());
     c.def_prop_ro("underlying_type", [](PyRuntimeArgType &self) {
       return mlirKtdpRuntimeArgTypeGetUnderlyingType(self);
     });
@@ -106,7 +106,7 @@ NB_MODULE(_ktir, m) {
             mlirDialectHandleLoadDialect(handle, context_);
         }
       },
-      nb::arg("context").none() = nb::none(), nb::arg("load") = true);
+      nb::arg("context") = nb::none(), nb::arg("load") = true);
 
   //===--------------------------------------------------------------------===//
   // _ktir.ktdp Module
