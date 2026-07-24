@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Add custom modules to the search path.
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 project(KTIR 
   VERSION 0.2
