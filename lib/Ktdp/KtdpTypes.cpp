@@ -3,6 +3,7 @@
 // Implements:
 //   AccessTileType::parse / ::print / ::verify
 //   RuntimeArgType::parse / ::print / ::verify
+//   TileFutureType::verify
 //
 //===----------------------------------------------------------------------===//
 
@@ -10,6 +11,7 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/DialectImplementation.h"
+#include "mlir/IR/IntegerSet.h"
 #include "mlir/IR/TypeSupport.h"
 
 using namespace mlir;
@@ -151,3 +153,24 @@ Type RuntimeArgType::parse(AsmParser &parser) {
       [&] { return parser.emitError(parser.getCurrentLocation()); },
       underlyingType, granularity, upperbound);
 }
+
+//===----------------------------------------------------------------------===//
+// TileFutureType
+//===----------------------------------------------------------------------===//
+
+LogicalResult TileFutureType::verify(
+    function_ref<InFlightDiagnostic()> emitError,
+    ArrayRef<RankedTensorType> partialTypes, IntegerSetAttr groups) {
+  if (partialTypes.empty())
+    return emitError() << "tile_future must carry at least one partial type";
+
+  IntegerSet set = groups.getValue();
+  if (set.getNumDims() != 1)
+    return emitError() << "tile_future `groups` must have exactly one dimension (g)";
+  if (set.getNumSymbols() != 0)
+    return emitError() << "tile_future `groups` must have no symbols";
+
+  return success();
+}
+
+

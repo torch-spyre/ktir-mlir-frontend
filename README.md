@@ -18,8 +18,12 @@ The `ktdp` dialect models tile-based, data-parallel kernels targeting multi-core
 - **Data movement**: `load`, `store` (driven by access tiles)
 - **Tile identity**: `get_compute_tile_id`
 - **Runtime args**: `runtime_arg` type + `runtime_arg_extract` op
+- **Inter-tile communication**: `inter_tile_produce` + `inter_tile_reduce`
+  (all-reduce; `yield_partial` / `yield_reduced` terminators). Broadcast
+  (`inter_tile_consume`), reduce-scatter, per-tile sync, gather, and scatter are
+  future work.
 
-Custom types: `!ktdp.access_tile<NxMxindex>`, `!ktdp.runtime_arg<type, granularity=N, upperbound=M>`
+Custom types: `!ktdp.access_tile<NxMxindex>`, `!ktdp.runtime_arg<type, granularity=N, upperbound=M>`, `!ktdp.tile_future<T_p_1, ...>`
 
 Memory spaces: `#ktdp.spyre_memory_space<HBM>`, `<LX, core=7>`, `<unspecified>`
 

@@ -73,6 +73,187 @@ def KTDP_RegionTerminatorOp : Ktdp_Op<"region_terminator", [Terminator]> {
   let assemblyFormat = "attr-dict";
 }
 
+//===----------------------------------------------------------------------===//
+// Inter-tile communication
+//
+// Implements the design in docs/inter-tile-communication.md. This first cut
+// covers the all-reduce pattern: `ktdp.inter_tile_produce` (production) +
+// `ktdp.inter_tile_reduce` (reduction delivery), full-barrier synchronization.
+// Broadcast (`inter_tile_consume`), reduce-scatter, per-tile synchronization
+// (`producer_dependency_per_consumer`), gather, and scatter are future work;
+// the `!ktdp.tile_future` type and these terminators are shared scaffolding for
+// them.
+//===----------------------------------------------------------------------===//
+
+def KTDP_YieldPartialOp : Ktdp_Op<"yield_partial",
+    [Terminator, ReturnLike, Pure,
+     HasParent<"::mlir::ktdp::InterTileProduceOp">]> {
+  let summary = "Terminator naming a tile's partial contributions";
+  let description = [{
+    Terminates the producer region of `ktdp.inter_tile_produce`, yielding one
+    value per partial-tensor role. The yielded value types must match the
+    partial types carried by the produced `!ktdp.tile_future`.
+  }];
+  let arguments = (ins Variadic<AnyRankedTensor>:$values);
+  let assemblyFormat = "($values^ `:` type($values))? attr-dict";
+  // Required so ensureTerminator() (called by SingleBlockImplicitTerminator
+  // via the declarative format path) can construct a zero-operand terminator.
+  let builders = [OpBuilder<(ins), [{ $_state.addOperands(ValueRange{}); }]>];
+}
+
+def KTDP_YieldReducedOp : Ktdp_Op<"yield_reduced",
+    [Terminator, ReturnLike, Pure,
+     ParentOneOf<["::mlir::ktdp::InterTileReduceOp"]>]> {
+  let summary = "Terminator yielding the combined partials of a reducer region";
+  let description = [{
+    Terminates the reducer region of `ktdp.inter_tile_reduce` (and, in future,
+    `ktdp.inter_tile_reduce_scatter`), yielding one combined value per
+    partial-tensor role. The yielded value types must match the partial types
+    `T_p_i` (not the rank-reduced result types).
+  }];
+  let arguments = (ins Variadic<AnyRankedTensor>:$values);
+  let assemblyFormat = "($values^ `:` type($values))? attr-dict";
+  let builders = [OpBuilder<(ins), [{ $_state.addOperands(ValueRange{}); }]>];
+}
+
+def KTDP_InterTileProduceOp : Ktdp_Op<"inter_tile_produce",
+    [SingleBlockImplicitTerminator<"::mlir::ktdp::YieldPartialOp">,
+     RecursiveMemoryEffects]> {
+  let summary = "Unified production op for inter-tile communication";
+  let description = [{
+    The `ktdp.inter_tile_produce` operation names **what partial results each
+    tile contributes** to a cross-tile communication and returns a
+    `!ktdp.tile_future` handle carrying per-tile availability signals.
+
+    The producer region runs once per participating tile in that tile's SPMD
+    execution. Its single block argument `%gid : index` is the index of the
+    group the tile belongs to (the runtime binds tile `t` to the group `g`
+    whose `producer_tiles_per_group(g)` contains `t`). The block terminates
+    with `ktdp.yield_partial`, naming the per-tile contribution for each role.
+
+    Attributes:
+    - `producer_tiles_per_group` — parameterized affine integer set `(i)[g]`
+      selecting which tiles produce per group.
+
+    The `groups` integer set is embedded in the result `!ktdp.tile_future` type.
+    The result `!ktdp.tile_future` must have exactly one use: the single
+    delivery op that consumes it.
+
+    Example:
+    ```mlir
+    %f = ktdp.inter_tile_produce
+        producer_tiles_per_group = affine_set<(i)[g] : (i - 4*g >= 0, -i + 4*g + 3 >= 0)>
+        -> !ktdp.tile_future<tensor<1x64xf16>, groups = affine_set<(g) : (g >= 0, -g + 7 >= 0)>>
+    {
+      ^bb0(%gid: index):
+        ktdp.yield_partial %partial : tensor<1x64xf16>
+    }
+    ```
+  }];
+
+  let arguments = (ins
+    Builtin_IntegerSetAttr:$producer_tiles_per_group);
+  let results = (outs Ktdp_TileFutureType:$future);
+  let regions = (region SizedRegion<1>:$body);
+
+  let assemblyFormat =
+      "`producer_tiles_per_group` `=` $producer_tiles_per_group attr-dict"
+      " `->` type($future) $body";
+  let hasVerifier = 1;
+  let hasRegionVerifier = 1;
+
+  let extraClassDeclaration = [{
+    /// Convenience: the partial types carried by the produced future.
+    ::llvm::ArrayRef<::mlir::RankedTensorType> getPartialTypes() {
+      return getFuture().getType().getPartialTypes();
+    }
+    /// The groups set, read from the result tile_future type.
+    ::mlir::IntegerSet getGroups() {
+      return getFuture().getType().getGroups().getValue();
+    }
+  }];
+}
+
+def KTDP_InterTileReduceOp : Ktdp_Op<"inter_tile_reduce",
+    [SingleBlockImplicitTerminator<"::mlir::ktdp::YieldReducedOp">,
+     RecursiveMemoryEffects,
+     RangedTypesMatchWith<
+         "result types must match future partial types",
+         "future", "results",
+         "llvm::cast<TileFutureType>($_self).getPartialTypes()">,
+     TypesMatchWith<
+         "identity types must match result types",
+         "results", "identity", "$_self">]> {
+  let summary = "Reduction delivery op (all-reduce / reduce)";
+  let description = [{
+    The `ktdp.inter_tile_reduce` operation consumes the `!ktdp.tile_future`
+    produced by `ktdp.inter_tile_produce` and combines the partials of every
+    producer tile in each group with an associative-commutative combiner,
+    delivering the fully reduced result to the consumer tiles.
+
+    The reducer region receives `2N` block arguments
+    (`%lhs_1..%lhs_N, %rhs_1..%rhs_N`, each of partial type `T_p_i`) and
+    terminates with `ktdp.yield_reduced`, yielding `N` combined values of the
+    partial types. The combiner must be pure.
+
+    Attributes:
+    - `consumer_tiles_per_group` — tiles that receive the reduced result.
+    - `producer_dependency_per_consumer` *(optional)* — per-tile dependency
+      set; when absent, full-barrier semantics (all producers contribute).
+
+    The `groups` integer set is inferred from the operand `!ktdp.tile_future` type.
+
+    `identity` provides one identity tensor per role (matching `T_p_i`),
+    hoisted before the op and shared across groups/tiles.
+
+    Each result `T_r_i` has the same type as the corresponding partial type `T_p_i`.
+    Every consumer tile in a group holds that group's fully reduced result
+    (all-reduce when consumer set == producer set).
+
+    Example:
+    ```mlir
+    %r = ktdp.inter_tile_reduce(%f)
+        consumer_tiles_per_group = affine_set<(i)[g] : (i - 4*g >= 0, -i + 4*g + 3 >= 0)>,
+        identity(%add_id : tensor<1x64xf16>)
+        : !ktdp.tile_future<tensor<1x64xf16>, groups = affine_set<(g) : (g >= 0, -g + 7 >= 0)>> -> tensor<1x64xf16>
+    {
+      ^bb0(%lhs: tensor<1x64xf16>, %rhs: tensor<1x64xf16>):
+        %s = linalg.add ins(%lhs, %rhs : tensor<1x64xf16>, tensor<1x64xf16>)
+                        outs(%lhs : tensor<1x64xf16>) -> tensor<1x64xf16>
+        ktdp.yield_reduced %s : tensor<1x64xf16>
+    }
+    ```
+  }];
+
+  let arguments = (ins
+    Ktdp_TileFutureType:$future,
+    Variadic<AnyRankedTensor>:$identity,
+    Builtin_IntegerSetAttr:$consumer_tiles_per_group,
+    OptionalAttr<Builtin_IntegerSetAttr>:$producer_dependency_per_consumer);
+  let results = (outs Variadic<AnyRankedTensor>:$results);
+  let regions = (region SizedRegion<1>:$combiner);
+
+  let assemblyFormat = [{
+    `(` $future `)` `consumer_tiles_per_group` `=` $consumer_tiles_per_group `,`
+    (`producer_dependency_per_consumer` `=` $producer_dependency_per_consumer^ `,`)?
+    `identity` `(` ($identity^ `:` type($identity))? `)`
+    attr-dict `:` type($future) `->` type($results) $combiner
+  }];
+  let hasVerifier = 1;
+  let hasRegionVerifier = 1;
+
+  let extraClassDeclaration = [{
+    /// Convenience: the partial types carried by the consumed future.
+    ::llvm::ArrayRef<::mlir::RankedTensorType> getPartialTypes() {
+      return getFuture().getType().getPartialTypes();
+    }
+    /// The groups set, read from the operand tile_future type.
+    ::mlir::IntegerSet getGroups() {
+      return getFuture().getType().getGroups().getValue();
+    }
+  }];
+}
+
 def KTDP_GetComputeTileIdOp : Ktdp_Op<"get_compute_tile_id",
   [Pure]> {
     let summary = "Gets the id of the current compute tile";

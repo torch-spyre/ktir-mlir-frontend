@@ -41,8 +41,8 @@ void KtdpDialect::initialize() {
 #include "Ktdp/KtdpOps.cpp.inc"
   >();
   addTypes<
-    AccessTileType,
-    RuntimeArgType
+#define GET_TYPEDEF_LIST
+#include "Ktdp/KtdpOpsTypes.cpp.inc"
   >();
   addAttributes<
     SpyreMemorySpaceAttr

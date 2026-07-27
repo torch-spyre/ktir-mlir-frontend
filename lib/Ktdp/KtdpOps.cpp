@@ -22,8 +22,12 @@
 #include "Ktdp/KtdpOps.hpp"
 
 #include "Ktdp/KtdpTypes.hpp"
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include "mlir/Analysis/FlatLinearValueConstraints.h"
+#include "mlir/Analysis/Presburger/IntegerRelation.h"
 #include "mlir/IR/DialectImplementation.h"
+#include "mlir/IR/IntegerSet.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Interfaces/ViewLikeInterface.h"
 
@@ -1215,6 +1219,213 @@ LogicalResult RuntimeArgExtractOp::verify() {
       }
       break;
   }
+
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
+// InterTileProduceOp
+//===----------------------------------------------------------------------===//
+
+namespace {
+
+// Pure-enumeration helpers for inter-tile verifiers (Option B).
+//
+// We enumerate concrete integer points rather than using Presburger set
+// operations. This keeps the code simple and removes the MLIRPresburger
+// dependency. The trade-off is that both `groups` and the tile-id range must
+// be statically bounded; unbounded cases are deferred (TODO).
+//
+// Note: a pure-Presburger approach (Option A) was also designed: disjointness
+// and subset become relation emptiness queries over (i, g) without any loop;
+// the |C|==1 mode gate requires a two-tile-variable construction. See the
+// discussion at https://github.com/torch-spyre/ktir-mlir-frontend/pull/25
+// for the full design if unbounded-groups support is ever needed.
+
+// Enumerate the group values in `groupsSet` (a 1D set over `g` with no
+// symbols). Returns std::nullopt when the range is not statically bounded.
+std::optional<SmallVector<int64_t>> groupValues(IntegerSet groupsSet) {
+  FlatLinearValueConstraints cst(groupsSet);
+  // getConstantBound64 returns a scalar constant lb/ub or nullopt when the
+  // bound is symbolic or absent -- exactly the bounded-vs-unbounded gate we
+  // need, with no manual constraint inspection.
+  std::optional<int64_t> lo =
+      cst.getConstantBound64(presburger::BoundType::LB, /*pos=*/0);
+  std::optional<int64_t> hi =
+      cst.getConstantBound64(presburger::BoundType::UB, /*pos=*/0);
+  if (!lo || !hi) return std::nullopt;
+  SmallVector<int64_t> vals;
+  for (int64_t g = *lo; g <= *hi; ++g) {
+    FlatLinearValueConstraints gCst(groupsSet);
+    gCst.setAndEliminate(gCst.getVarKindOffset(presburger::VarKind::SetDim),
+                         {g});
+    if (!gCst.isIntegerEmpty()) vals.push_back(g);
+  }
+  return vals;
+}
+
+// Return the set of tile ids selected by `tileSet` (a set `(i)[g]`) for a
+// concrete group value `g`. Enumerates `i` from 0 up to the static upper
+// bound on the tile-id dimension. Returns std::nullopt when that bound is not
+// statically known.
+std::optional<llvm::DenseSet<int64_t>> tilesOf(IntegerSet tileSet,
+                                               int64_t gVal) {
+  FlatLinearValueConstraints cst(tileSet);
+  // Fix the group symbol to gVal and project it out.
+  cst.setAndEliminate(cst.getVarKindOffset(presburger::VarKind::Symbol),
+                      {gVal});
+  // Upper bound on the tile-id dimension after fixing g; nullopt means the
+  // tile range is symbolic (e.g. parameterized by a runtime value) -- defer.
+  std::optional<int64_t> hi =
+      cst.getConstantBound64(presburger::BoundType::UB, /*pos=*/0);
+  if (!hi) return std::nullopt;
+  llvm::DenseSet<int64_t> out;
+  for (int64_t i = 0; i <= *hi; ++i) {
+    FlatLinearValueConstraints pt(tileSet);
+    pt.setAndEliminate(pt.getVarKindOffset(presburger::VarKind::Symbol),
+                       {gVal});
+    pt.setAndEliminate(pt.getVarKindOffset(presburger::VarKind::SetDim), {i});
+    if (!pt.isIntegerEmpty()) out.insert(i);
+  }
+  return out;
+}
+
+// Return the set of producer tiles in `depSet` (a set `(p)[c, g]`) for a
+// concrete consumer `cVal` and group `gVal`. Symbols are ordered [c, g].
+std::optional<llvm::DenseSet<int64_t>> depTilesOf(IntegerSet depSet,
+                                                   int64_t cVal,
+                                                   int64_t gVal) {
+  FlatLinearValueConstraints cst(depSet);
+  unsigned symBase = cst.getVarKindOffset(presburger::VarKind::Symbol);
+  cst.setAndEliminate(symBase, {cVal});   // fix c (first symbol)
+  cst.setAndEliminate(symBase, {gVal});   // fix g (now first remaining symbol)
+  std::optional<int64_t> hi =
+      cst.getConstantBound64(presburger::BoundType::UB, /*pos=*/0);
+  if (!hi) return std::nullopt;
+  llvm::DenseSet<int64_t> out;
+  for (int64_t p = 0; p <= *hi; ++p) {
+    FlatLinearValueConstraints pt(depSet);
+    unsigned sb = pt.getVarKindOffset(presburger::VarKind::Symbol);
+    pt.setAndEliminate(sb, {cVal});
+    pt.setAndEliminate(sb, {gVal});
+    pt.setAndEliminate(pt.getVarKindOffset(presburger::VarKind::SetDim), {p});
+    if (!pt.isIntegerEmpty()) out.insert(p);
+  }
+  return out;
+}
+
+}  // namespace
+
+// Syntax:
+
+LogicalResult InterTileProduceOp::verify() {
+
+  // Producer region: one block, single `index` group-id argument.
+  Block& block = getBody().front();
+  if (block.getNumArguments() != 1 ||
+      !block.getArgument(0).getType().isIndex())
+    return emitOpError(
+        "producer region must take a single `index` group-id argument");
+
+  // The producer set's symbol must be the group index `g`; groups set has none.
+  IntegerSet groupsSet = getGroups();
+  IntegerSet producerSet = getProducerTilesPerGroup().getValue();
+  if (groupsSet.getNumSymbols() != 0)
+    return emitOpError("`groups` integer set must not have symbols");
+  if (groupsSet.getNumDims() != 1)
+    return emitOpError("`groups` integer set must have a single dimension (g)");
+  if (producerSet.getNumSymbols() != 1)
+    return emitOpError("`producer_tiles_per_group` must have exactly one symbol "
+                       "(the group index g)");
+
+  // Disjointness invariant (§2.1): producer tile sets for distinct groups must
+  // not overlap. Enumeration check -- requires statically bounded groups and
+  // tile-id range; deferred otherwise.
+  if (auto groupVals = groupValues(groupsSet)) {
+    SmallVector<llvm::DenseSet<int64_t>> tileSets;
+    for (int64_t g : *groupVals) {
+      auto ts = tilesOf(producerSet, g);
+      if (!ts) break;  // tile bound not static for this g -- skip
+      tileSets.push_back(std::move(*ts));
+    }
+    if (tileSets.size() == groupVals->size()) {
+      for (size_t a = 0; a < tileSets.size(); ++a)
+        for (size_t b = a + 1; b < tileSets.size(); ++b)
+          for (int64_t tile : tileSets[a])
+            if (tileSets[b].count(tile))
+              return emitOpError("producer_tiles_per_group for groups ")
+                     << (*groupVals)[a] << " and " << (*groupVals)[b]
+                     << " are not disjoint";
+    }
+  }
+  // else: unbounded -- defer to a future symbolic check.
+
+  return success();
+}
+
+LogicalResult InterTileProduceOp::verifyRegions() {
+  TileFutureType futureType = getFuture().getType();
+  ArrayRef<RankedTensorType> partials = futureType.getPartialTypes();
+
+  // Terminator yields one value per partial role, matching the future types.
+  Block& block = getBody().front();
+  auto yield = cast<YieldPartialOp>(block.getTerminator());
+  if (yield.getValues().size() != partials.size())
+    return emitOpError("yield_partial yields ")
+           << yield.getValues().size() << " values but the future carries "
+           << partials.size() << " partial type(s)";
+  for (auto [i, val] : llvm::enumerate(yield.getValues()))
+    if (val.getType() != partials[i])
+      return emitOpError("yield_partial operand #")
+             << i << " type " << val.getType()
+             << " does not match future partial type " << partials[i];
+
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
+// InterTileReduceOp
+//===----------------------------------------------------------------------===//
+
+LogicalResult InterTileReduceOp::verify() {
+  ArrayRef<RankedTensorType> partials = getPartialTypes();
+  size_t n = partials.size();
+
+  // Reducer region: 2N args (lhs_1..lhs_N, rhs_1..rhs_N) each of type T_p_i.
+  Block& block = getCombiner().front();
+  if (block.getNumArguments() != 2 * n)
+    return emitOpError("reducer region must take 2*")
+           << n << " arguments, got " << block.getNumArguments();
+  for (size_t i = 0; i < n; ++i) {
+    if (block.getArgument(i).getType() != partials[i] ||
+        block.getArgument(n + i).getType() != partials[i])
+      return emitOpError("reducer region argument pair #")
+             << i << " must both have partial type " << partials[i];
+  }
+  // Local structural checks on the consumer set attribute.
+  IntegerSet consumerSet = getConsumerTilesPerGroup().getValue();
+  if (consumerSet.getNumSymbols() != 1)
+    return emitOpError("`consumer_tiles_per_group` must have exactly one "
+                       "symbol (the group index g)");
+
+  return success();
+}
+
+LogicalResult InterTileReduceOp::verifyRegions() {
+  ArrayRef<RankedTensorType> partials = getPartialTypes();
+  size_t n = partials.size();
+
+  // Terminator yields N values of the partial types T_p_i.
+  Block& block = getCombiner().front();
+  auto yield = cast<YieldReducedOp>(block.getTerminator());
+  if (yield.getValues().size() != n)
+    return emitOpError("yield_reduced yields ")
+           << yield.getValues().size() << " values but expected " << n;
+  for (auto [i, val] : llvm::enumerate(yield.getValues()))
+    if (val.getType() != partials[i])
+      return emitOpError("yield_reduced operand #")
+             << i << " type " << val.getType()
+             << " must match partial type " << partials[i];
 
   return success();
 }

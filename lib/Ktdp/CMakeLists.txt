@@ -26,4 +26,6 @@ mlir_target_link_libraries(KTIRKtdpDialect PUBLIC
   MLIRSCFDialect
   MLIRFuncDialect
   MLIRArithDialect
+  MLIRAnalysis
+  MLIRPresburger
 )
