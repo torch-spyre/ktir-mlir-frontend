@@ -1,9 +1,9 @@
-//===- KtdpAttrs.td - KTDP dialect attribute definitions ---*- tablegen -*-===//
+//===- KTDPAttrs.td - KTDP dialect attribute definitions ---*- tablegen -*-===//
 //
 // Attribute definitions for the ktdp dialect.
 //
 // Hierarchy:
-//   KtdpMemorySpaceAttr  (abstract base / AttrInterface)
+//   KTDPMemorySpaceAttr  (abstract base / AttrInterface)
 //     +-- SpyreMemorySpaceAttr  (concrete, mnemonic: spyre_memory_space)
 //
 //===----------------------------------------------------------------------===//
@@ -20,7 +20,7 @@ include "mlir/IR/EnumAttr.td"
 // Memory-space enum
 //===----------------------------------------------------------------------===//
 
-def Ktdp_SpyreMemorySpaceKind : I32EnumAttr<
+def KTDP_SpyreMemorySpaceKind : I32EnumAttr<
     "SpyreMemorySpaceKind",
     "Spyre memory-space enum",
     [
@@ -45,9 +45,9 @@ def Ktdp_SpyreMemorySpaceKind : I32EnumAttr<
 //   core   -- optional core affinity (default -1 = unspecified)
 //===----------------------------------------------------------------------===//
 
-def Ktdp_SpyreMemorySpaceAttr
-    : AttrDef<Ktdp_Dialect, "SpyreMemorySpace",
-              [DeclareAttrInterfaceMethods<Ktdp_MemorySpaceAttr>]> {
+def KTDP_SpyreMemorySpaceAttr
+    : AttrDef<KTDP_Dialect, "SpyreMemorySpace",
+              [DeclareAttrInterfaceMethods<KTDP_MemorySpaceAttr>]> {
   let mnemonic = "spyre_memory_space";
   let summary = "Spyre target memory-space descriptor";
   let description = [{

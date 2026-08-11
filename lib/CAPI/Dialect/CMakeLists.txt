@@ -7,5 +7,5 @@ add_ktir_public_c_api_library(KTIRKTDPCAPI
   EXPORT_NAME KTDPCAPI
 
   LINK_LIBS PUBLIC
-    KTIRKtdpDialect
+    KTIRKTDPDialect
 )

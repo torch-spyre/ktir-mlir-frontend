@@ -1,4 +1,4 @@
-//===- KtdpAttrInterfaces.td - KTDP attr iface definitions -*- tablegen -*-===//
+//===- KTDPAttrInterfaces.td - KTDP attr iface definitions -*- tablegen -*-===//
 //
 // Attribute interface definitions for the ktdp dialect.
 //
@@ -10,10 +10,10 @@
 include "mlir/IR/OpBase.td"
 
 //===----------------------------------------------------------------------===//
-// KtdpMemorySpaceAttr -- abstract base (AttrInterface)
+// KTDPMemorySpaceAttr -- abstract base (AttrInterface)
 //===----------------------------------------------------------------------===//
 
-def Ktdp_MemorySpaceAttr : AttrInterface<"KtdpMemorySpaceAttr"> {
+def KTDP_MemorySpaceAttr : AttrInterface<"KTDPMemorySpaceAttr"> {
   let cppNamespace = "::mlir::ktdp";
   let description = [{
     Abstract base interface for all device-specific memory-space attributes

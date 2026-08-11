@@ -11,6 +11,7 @@ add_ktir_tool(ktir-opt
   SUPPORT_PLUGINS
 )
 target_link_libraries(ktir-opt PRIVATE
+  KTIR::RegisterEverything
   ${_dialect_libs}
   ${_extension_libs}
   ${_conversion_libs}

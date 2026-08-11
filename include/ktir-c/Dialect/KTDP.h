@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(Ktdp, ktdp);
+MLIR_DECLARE_CAPI_DIALECT_REGISTRATION(KTDP, ktdp);
 
 MLIR_CAPI_EXPORTED MlirType mlirKTDPAccessTileTypeGet(intptr_t rank,
                                                       int64_t *shape,

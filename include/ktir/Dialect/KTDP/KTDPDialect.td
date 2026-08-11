@@ -1,4 +1,4 @@
-//===- KtdpDialect.td - KTDP dialect definition ------------*- tablegen -*-===//
+//===- KTDPDialect.td - KTDP dialect definition ------------*- tablegen -*-===//
 //
 // Dialect declaration for the ktdp (Kernel Tile Data-Parallel) dialect.
 //
@@ -13,7 +13,7 @@ include "mlir/IR/BuiltinDialect.td"
 // Dialect
 //===----------------------------------------------------------------------===//
 
-def Ktdp_Dialect : Dialect {
+def KTDP_Dialect : Dialect {
   let name = "ktdp";
   let summary = "Kernel Tile Data-Parallel (KTDP) dialect for KTIR";
   let description = [{

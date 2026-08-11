@@ -1,4 +1,4 @@
-//===- KtdpTypes.cpp - KTDP dialect type implementations ------------------===//
+//===- KTDPTypes.cpp - KTDP dialect type implementations ------------------===//
 //
 // Implements:
 //   AccessTileType::parse / ::print / ::verify

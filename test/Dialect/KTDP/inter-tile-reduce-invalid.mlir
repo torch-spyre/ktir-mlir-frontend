@@ -50,7 +50,7 @@ func.func @bad_result_type(%p: tensor<1x64xf16>, %id: tensor<1x64xf16>) -> tenso
 // -----
 // tile_future partial types must be ranked tensors.
 // expected-error @below {{invalid kind of type specified: expected builtin.tensor, but found 'index'}}
-// expected-error @below {{failed to parse Ktdp_TileFutureType parameter 'partialTypes'}}
+// expected-error @below {{failed to parse KTDP_TileFutureType parameter 'partialTypes'}}
 func.func @bad_future_scalar(%a: !ktdp.tile_future<(index), groups = affine_set<(g) : (g == 0)>>) { return }
 
 // -----

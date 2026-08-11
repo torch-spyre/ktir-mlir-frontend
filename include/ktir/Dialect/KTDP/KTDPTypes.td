@@ -1,4 +1,4 @@
-//===- KtdpTypes.td - KTDP dialect type definitions --------*- tablegen -*-===//
+//===- KTDPTypes.td - KTDP dialect type definitions --------*- tablegen -*-===//
 //
 // Type definitions for the ktdp dialect.
 //
@@ -27,7 +27,7 @@ include "ktir/Dialect/KTDP/KTDPDialect.td"
 // Base class for KTDP dialect types
 class KTDP_Type<string name, string typeMnemonic, list<Trait> traits = [],
                 string baseCppClass = "::mlir::Type">
-    : TypeDef<Ktdp_Dialect, name, traits, baseCppClass> {
+    : TypeDef<KTDP_Dialect, name, traits, baseCppClass> {
   let mnemonic = typeMnemonic;
 }
 
@@ -35,7 +35,7 @@ class KTDP_Type<string name, string typeMnemonic, list<Trait> traits = [],
 // AccessTileType
 //===----------------------------------------------------------------------===//
 
-def Ktdp_AccessTileType : KTDP_Type<"AccessTile", "access_tile", [
+def KTDP_AccessTileType : KTDP_Type<"AccessTile", "access_tile", [
     ShapedTypeInterface, ValueSemantics
   ], "::mlir::TensorType"> {
   let summary = "Multi-dimensional tile with a fixed number of dimensions and index element type";
@@ -135,7 +135,7 @@ def Ktdp_AccessTileType : KTDP_Type<"AccessTile", "access_tile", [
 // RuntimeArgType
 //===----------------------------------------------------------------------===//
 
-def Ktdp_RuntimeArgType : KTDP_Type<"RuntimeArg", "runtime_arg"> {
+def KTDP_RuntimeArgType : KTDP_Type<"RuntimeArg", "runtime_arg"> {
   let summary = "Runtime argument type with optional granularity and upper bound";
   let hasCustomAssemblyFormat = 1;
   let description = [{
@@ -217,7 +217,7 @@ def Ktdp_RuntimeArgType : KTDP_Type<"RuntimeArg", "runtime_arg"> {
 // TileFutureType
 //===----------------------------------------------------------------------===//
 
-def Ktdp_TileFutureType : KTDP_Type<"TileFuture", "tile_future"> {
+def KTDP_TileFutureType : KTDP_Type<"TileFuture", "tile_future"> {
   let summary = "Workgroup-visible handle to in-flight per-tile partial contributions";
   let assemblyFormat = "`<` `(` $partialTypes `)` `,` `groups` `=` $groups `>`";
   let description = [{

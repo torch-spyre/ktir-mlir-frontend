@@ -1,4 +1,4 @@
-//===- KtdpOps.td - KTDP dialect operation definitions ------*- tablegen -*-===//
+//===- KTDP.td - KTDP dialect operation definitions ------*- tablegen -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -48,8 +48,8 @@ include "ktir/Dialect/KTDP/KTDPAttrs.td"
 //   * The parent dialect of the operation.
 //   * The mnemonic for the operation, or the name without the dialect prefix.
 //   * A list of traits for the operation.
-class Ktdp_Op<string mnemonic, list<Trait> traits = []> :
-    Op<Ktdp_Dialect, mnemonic, traits> {
+class KTDP_Op<string mnemonic, list<Trait> traits = []> :
+    Op<KTDP_Dialect, mnemonic, traits> {
 
 }
 
@@ -57,19 +57,19 @@ class Ktdp_Op<string mnemonic, list<Trait> traits = []> :
 // Memory space attribute constraint (PR #73 style)
 //===----------------------------------------------------------------------===//
 
-def Ktdp_MemorySpaceAttrConstraint
-    : Attr<CPred<"::llvm::isa<::mlir::ktdp::KtdpMemorySpaceAttr>($_self)">,
-           "KtdpMemorySpaceAttr"> {
+def KTDP_MemorySpaceAttrConstraint
+    : Attr<CPred<"::llvm::isa<::mlir::ktdp::KTDPMemorySpaceAttr>($_self)">,
+           "KTDPMemorySpaceAttr"> {
   let storageType = "::mlir::Attribute";
-  let returnType  = "::mlir::ktdp::KtdpMemorySpaceAttr";
-  let convertFromStorage = "::llvm::cast<::mlir::ktdp::KtdpMemorySpaceAttr>($_self)";
+  let returnType  = "::mlir::ktdp::KTDPMemorySpaceAttr";
+  let convertFromStorage = "::llvm::cast<::mlir::ktdp::KTDPMemorySpaceAttr>($_self)";
 }
 
 //===----------------------------------------------------------------------===//
 // Operations
 //===----------------------------------------------------------------------===//
 
-def KTDP_RegionTerminatorOp : Ktdp_Op<"region_terminator", [Terminator]> {
+def KTDP_RegionTerminatorOp : KTDP_Op<"region_terminator", [Terminator]> {
   let assemblyFormat = "attr-dict";
 }
 
@@ -85,7 +85,7 @@ def KTDP_RegionTerminatorOp : Ktdp_Op<"region_terminator", [Terminator]> {
 // them.
 //===----------------------------------------------------------------------===//
 
-def KTDP_YieldPartialOp : Ktdp_Op<"yield_partial",
+def KTDP_YieldPartialOp : KTDP_Op<"yield_partial",
     [Terminator, ReturnLike, Pure,
      HasParent<"::mlir::ktdp::InterTileProduceOp">]> {
   let summary = "Terminator naming a tile's partial contributions";
@@ -101,7 +101,7 @@ def KTDP_YieldPartialOp : Ktdp_Op<"yield_partial",
   let builders = [OpBuilder<(ins), [{ $_state.addOperands(ValueRange{}); }]>];
 }
 
-def KTDP_YieldReducedOp : Ktdp_Op<"yield_reduced",
+def KTDP_YieldReducedOp : KTDP_Op<"yield_reduced",
     [Terminator, ReturnLike, Pure,
      ParentOneOf<["::mlir::ktdp::InterTileReduceOp"]>]> {
   let summary = "Terminator yielding the combined partials of a reducer region";
@@ -116,7 +116,7 @@ def KTDP_YieldReducedOp : Ktdp_Op<"yield_reduced",
   let builders = [OpBuilder<(ins), [{ $_state.addOperands(ValueRange{}); }]>];
 }
 
-def KTDP_InterTileProduceOp : Ktdp_Op<"inter_tile_produce",
+def KTDP_InterTileProduceOp : KTDP_Op<"inter_tile_produce",
     [SingleBlockImplicitTerminator<"::mlir::ktdp::YieldPartialOp">,
      RecursiveMemoryEffects]> {
   let summary = "Unified production op for inter-tile communication";
@@ -153,7 +153,7 @@ def KTDP_InterTileProduceOp : Ktdp_Op<"inter_tile_produce",
 
   let arguments = (ins
     Builtin_IntegerSetAttr:$producer_tiles_per_group);
-  let results = (outs Ktdp_TileFutureType:$future);
+  let results = (outs KTDP_TileFutureType:$future);
   let regions = (region SizedRegion<1>:$body);
 
   let assemblyFormat =
@@ -174,7 +174,7 @@ def KTDP_InterTileProduceOp : Ktdp_Op<"inter_tile_produce",
   }];
 }
 
-def KTDP_InterTileReduceOp : Ktdp_Op<"inter_tile_reduce",
+def KTDP_InterTileReduceOp : KTDP_Op<"inter_tile_reduce",
     [SingleBlockImplicitTerminator<"::mlir::ktdp::YieldReducedOp">,
      RecursiveMemoryEffects,
      RangedTypesMatchWith<
@@ -226,7 +226,7 @@ def KTDP_InterTileReduceOp : Ktdp_Op<"inter_tile_reduce",
   }];
 
   let arguments = (ins
-    Ktdp_TileFutureType:$future,
+    KTDP_TileFutureType:$future,
     Variadic<AnyRankedTensor>:$identity,
     Builtin_IntegerSetAttr:$consumer_tiles_per_group,
     OptionalAttr<Builtin_IntegerSetAttr>:$producer_dependency_per_consumer);
@@ -254,7 +254,7 @@ def KTDP_InterTileReduceOp : Ktdp_Op<"inter_tile_reduce",
   }];
 }
 
-def KTDP_GetComputeTileIdOp : Ktdp_Op<"get_compute_tile_id",
+def KTDP_GetComputeTileIdOp : KTDP_Op<"get_compute_tile_id",
   [Pure]> {
     let summary = "Gets the id of the current compute tile";
     let description = [{
@@ -284,7 +284,7 @@ def KTDP_GetComputeTileIdOp : Ktdp_Op<"get_compute_tile_id",
 }
 
 // Create Tensor View
-def KTDP_ConstructMemoryViewOp : Ktdp_Op<"construct_memory_view", [
+def KTDP_ConstructMemoryViewOp : KTDP_Op<"construct_memory_view", [
       AttrSizedOperandSegments,
       MemRefsNormalizable,
       Pure
@@ -341,7 +341,7 @@ def KTDP_ConstructMemoryViewOp : Ktdp_Op<"construct_memory_view", [
                        Variadic<Index>:$strides,
                        DenseI64ArrayAttr:$static_sizes,
                        DenseI64ArrayAttr:$static_strides,
-                       Ktdp_MemorySpaceAttrConstraint:$memory_space,
+                       KTDP_MemorySpaceAttrConstraint:$memory_space,
                        Builtin_IntegerSetAttr:$coordinate_set);
   let results = (outs AnyMemRef:$result);
 
@@ -356,7 +356,7 @@ def KTDP_ConstructMemoryViewOp : Ktdp_Op<"construct_memory_view", [
   let hasVerifier = 1;
 }
 
-def KTDP_ConstructDistributedMemoryViewOp : Ktdp_Op<"construct_distributed_memory_view", [Pure]> {
+def KTDP_ConstructDistributedMemoryViewOp : KTDP_Op<"construct_distributed_memory_view", [Pure]> {
 
     let summary = "Operation to construct distributed memory view over multiple memref objects";
     let description = [{
@@ -411,7 +411,7 @@ def KTDP_ConstructDistributedMemoryViewOp : Ktdp_Op<"construct_distributed_memor
 }
 
 // Access Tiles
-def KTDP_ConstructAccessTilesOp : Ktdp_Op<"construct_access_tile",
+def KTDP_ConstructAccessTilesOp : KTDP_Op<"construct_access_tile",
         [AttrSizedOperandSegments, Pure]> {
 
   let summary = "Operation to construct access tiles over a tensor or memref objects.";
@@ -460,7 +460,7 @@ def KTDP_ConstructAccessTilesOp : Ktdp_Op<"construct_access_tile",
         Builtin_IntegerSetAttr:$access_tile_set,
         AffineMapAttr:$access_tile_order);
 
-  let results = (outs Ktdp_AccessTileType:$result);
+  let results = (outs KTDP_AccessTileType:$result);
   let skipDefaultBuilders = 1;
   let hasCustomAssemblyFormat = 1;
 
@@ -479,7 +479,7 @@ def KTDP_ConstructAccessTilesOp : Ktdp_Op<"construct_access_tile",
   }];
 }
 
-def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_tile",
+def KTDP_ConstructIndirectAccessTilesOp : KTDP_Op<"construct_indirect_access_tile",
         [AttrSizedOperandSegments,SingleBlockImplicitTerminator<"ktdp::RegionTerminatorOp">,
          DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
 
@@ -573,7 +573,7 @@ def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_til
 
   let regions = (region AnyRegion:$region);
 
-  let results = (outs Ktdp_AccessTileType:$result);
+  let results = (outs KTDP_AccessTileType:$result);
   let skipDefaultBuilders = 1;
   let hasCustomAssemblyFormat = 1;
 
@@ -598,7 +598,7 @@ def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_til
 }
 
 // Load operation
-def KTDP_LoadOp : Ktdp_Op<"load",
+def KTDP_LoadOp : KTDP_Op<"load",
         [DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
 
   let summary = "Operation to load data based on the coordinates from access_tile.";
@@ -624,7 +624,7 @@ def KTDP_LoadOp : Ktdp_Op<"load",
       ```
     }];
 
-  let arguments = (ins Ktdp_AccessTileType:$access_tile);
+  let arguments = (ins KTDP_AccessTileType:$access_tile);
   let results = (outs AnyTensor:$result);
     let assemblyFormat = [{
       $access_tile attr-dict `:` type($access_tile) `->` type(results)
@@ -639,7 +639,7 @@ def KTDP_LoadOp : Ktdp_Op<"load",
 }
 
 // Store operation
-def KTDP_StoreOp : Ktdp_Op<"store",
+def KTDP_StoreOp : KTDP_Op<"store",
         [DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
 
   let summary = "Operation to store data based on the coordinates from access_tile.";
@@ -672,7 +672,7 @@ def KTDP_StoreOp : Ktdp_Op<"store",
       ```
     }];
 
-  let arguments = (ins AnyTensor:$data_tile, Ktdp_AccessTileType:$access_tile);
+  let arguments = (ins AnyTensor:$data_tile, KTDP_AccessTileType:$access_tile);
     let assemblyFormat = [{
       $data_tile `,` $access_tile attr-dict `:` type($data_tile) `,` type($access_tile)
     }];
@@ -681,7 +681,7 @@ def KTDP_StoreOp : Ktdp_Op<"store",
 }
 
 // Runtime argument extract operation
-def KTDP_RuntimeArgExtractOp : Ktdp_Op<"runtime_arg_extract", [Pure]> {
+def KTDP_RuntimeArgExtractOp : KTDP_Op<"runtime_arg_extract", [Pure]> {
   let summary = "Extract a value or attribute from a runtime_arg";
   let description = [{
     The `ktdp.runtime_arg_extract` operation extracts either the underlying value
@@ -707,7 +707,7 @@ def KTDP_RuntimeArgExtractOp : Ktdp_Op<"runtime_arg_extract", [Pure]> {
 
   let arguments = (ins
     KTDP_RuntimeArgExtractKind:$kind,
-    Ktdp_RuntimeArgType:$input
+    KTDP_RuntimeArgType:$input
   );
 
   let results = (outs AnyType:$result);

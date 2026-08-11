@@ -129,9 +129,9 @@ Or directly — lit must be pointed at the **build** directory where cmake
 generates `lit.site.cfg.py`:
 
 ```bash
-llvm-lit -sv build/test/Ktdp/
+llvm-lit -sv build/test/Dialect/KTDP/
 # or, with uv (lit is installed with --extra test):
-uv run lit -sv build/test/Ktdp/
+uv run lit -sv build/test/Dialect/KTDP/
 ```
 
 ### Python tests
@@ -182,12 +182,14 @@ build/bin/ktir-opt --verify-roundtrip file.mlir
 
 ```
 include/
-  Ktdp/                    # TableGen definitions + C++ headers
+  ktir/Dialect/KTDP/       # TableGen definitions + C++ headers
+  ktir-c/Dialect/          # C API headers
 lib/
-  Ktdp/                    # Dialect implementation
+  Dialect/KTDP/            # Dialect implementation
+  CAPI/Dialect/            # C API implementation
 tools/
   ktir-lsp-server/         # MLIR LSP server
   ktir-opt/                # Optimizer driver tool
 test/
-  Ktdp/                    # 17 LIT test files
+  Dialect/KTDP/            # LIT test files
 ```

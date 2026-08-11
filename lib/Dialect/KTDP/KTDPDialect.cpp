@@ -1,4 +1,4 @@
-//===- KtdpDialect.cpp - KTDP dialect definition --------------------------===//
+//===- KTDPDialect.cpp - KTDP dialect definition --------------------------===//
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,7 +35,7 @@
 using namespace mlir;
 using namespace mlir::ktdp;
 
-void KtdpDialect::initialize() {
+void KTDPDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
 #include "ktir/Dialect/KTDP/KTDP.cpp.inc"

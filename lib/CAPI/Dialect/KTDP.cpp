@@ -12,8 +12,8 @@
 #include "ktir/Dialect/KTDP/KTDPTypes.h"
 #include "mlir/CAPI/Registration.h"
 
-MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(Ktdp, ktdp,
-                                      mlir::ktdp::KtdpDialect)
+MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(KTDP, ktdp,
+                                      mlir::ktdp::KTDPDialect)
 
 MlirType mlirKTDPAccessTileTypeGet(intptr_t rank, int64_t *shape, MlirType elementType) {
   return wrap(mlir::ktdp::AccessTileType::get(llvm::ArrayRef(shape, static_cast<size_t>(rank)), unwrap(elementType)));

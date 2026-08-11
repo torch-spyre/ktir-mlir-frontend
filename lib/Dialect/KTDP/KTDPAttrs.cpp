@@ -1,4 +1,4 @@
-//===- KtdpAttrs.cpp - KTDP dialect attr implementations ------------------===//
+//===- KTDPAttrs.cpp - KTDP dialect attr implementations ------------------===//
 //
 //===----------------------------------------------------------------------===//
 
