@@ -8,17 +8,18 @@
 #include <mlir/InitAllPasses.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
-#include "ktir/Dialect/KTDP/KTDPDialect.h"
 #include "ktir/Conversion/Passes.h"
+#include "ktir/Dialect/KTDP/KTDPDialect.h"
+#include "ktir/Dialect/Spyre/SpyreDialect.h"
 
 using namespace mlir;
 
-auto main(int argc, char **argv) -> int {
+auto main(int argc, char** argv) -> int {
   registerAllPasses();
   ktir::registerKTIRConversionPasses();
 
   DialectRegistry registry;
-  registry.insert<ktdp::KtdpDialect>();
+  registry.insert<ktdp::KtdpDialect, spyre::SpyreDialect>();
   registerAllDialects(registry);
   registerAllExtensions(registry);
 
