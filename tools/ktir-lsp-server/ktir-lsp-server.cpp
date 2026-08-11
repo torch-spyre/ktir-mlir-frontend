@@ -7,15 +7,16 @@
 #include <mlir/Tools/mlir-lsp-server/MlirLspServerMain.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
-#include "ktir/Dialect/KTDP/KTDPDialect.h"
+#include "ktir/RegisterEverything.h"
 
 using namespace mlir;
 
 auto main(int argc, char **argv) -> int {
   DialectRegistry registry;
-  registry.insert<ktdp::KTDPDialect>();
   registerAllDialects(registry);
   registerAllExtensions(registry);
+  ktir::registerAllDialects(registry);
+  ktir::registerAllExtensions(registry);
 
   return asMainReturnCode(MlirLspServerMain(argc, argv, registry));
 }

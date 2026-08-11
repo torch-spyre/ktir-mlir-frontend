@@ -8,6 +8,7 @@ add_ktir_tool(ktir-lsp-server
   EXPORT_NAME lsp-server
 )
 target_link_libraries(ktir-lsp-server PRIVATE
+  KTIR::RegisterEverything
   ${_dialect_libs}
   ${_extension_libs}
 )

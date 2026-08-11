@@ -5,6 +5,7 @@
 set(_source_components
   MLIRPythonSources.Core
   MLIRPythonSources.Dialects.builtin
+  MLIRPythonSources.Dialects.affine
   MLIRPythonSources.Dialects.func
   MLIRPythonSources.Dialects.arith
   MLIRPythonSources.Dialects.math
