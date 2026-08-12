@@ -40,16 +40,16 @@ def SpyreOp_DF16 : SpyreOp_Type<"DF16", "df16", [
   VectorElementTypeInterface,
   MemRefElementTypeInterface
 ]> {
-  let summary = "IBM DF16 floating-point number";
+  let summary = "IBM df16 float";
   let description = [{
     The `df16` type represents floating-point numbers based on the IEEE-754
     binary format with the parameters 1-6-9, i.e.:
 
     ```
       |s||eeeeee||mmmmmmmmm|
-        |       |           ^ 9-bit mantissa
-        |       ^ 6-bit exponent
-        ^ sign bit
+       |       |          ^ 9-bit mantissa
+       |       ^ 6-bit exponent
+       ^ sign bit
     ```
   }];
 }

@@ -57,17 +57,21 @@ def Spyre_AddI32ToI32 : SpyreOp_IntrinsicOp<
   (ins I32:$lhs, I32:$rhs)
 > {
   let summary = "Adds two 32-bit integers";
+
+  let assemblyFormat = "operands attr-dict";
 }
 
 def Spyre_AddI64ToI64 : SpyreOp_IntrinsicOp<
   "addi64toi64", 
   (ins I64:$lhs, I64:$rhs)> {
   let summary = "Adds two 64-bit integers";
+
+  let assemblyFormat = "operands attr-dict";
 }
 
 def Spyre_Exp : SpyreOp_IntrinsicOp<
   "exp", 
-  (ins AnyTypeOf<[F32]>:$operand)
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
   let summary = "Evaluates the exponential function `exp(x)`";
 }
@@ -103,9 +107,11 @@ def Spyre_LayerNormScale : SpyreOp_IntrinsicOp<
 
 def Spyre_MulI32ToI32 : SpyreOp_IntrinsicOp<
   "muli32toi32",
-  (ins I32:$operand)
+  (ins I32:$lhs, I32:$rhs)
 > {
   let summary = "Multiplies two 32-bit integers into a 32-bit result";
+
+  let assemblyFormat = "operands attr-dict";
 }
 
 def Spyre_RealDiv : SpyreOp_IntrinsicOp<
