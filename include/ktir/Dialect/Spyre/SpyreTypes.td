@@ -25,6 +25,25 @@
 
 include "ktir/Dialect/Spyre/SpyreAttrs.td"
 
-// TODO: Maybe port custom vector and scalar types?
+include "mlir/IR/BuiltinTypeInterfaces.td"
+
+//===----------------------------------------------------------------------===//
+// Types
+//===----------------------------------------------------------------------===//
+
+class Spyre_Type<string name, string typeMnemonic, list<Trait> traits = []>
+    : TypeDef<Spyre_Dialect, name, traits> {
+  let mnemonic = typeMnemonic;
+}
+
+def Spyre_DF16 : Spyre_Type<"DF16", "df16", [
+  VectorElementTypeInterface, 
+  MemRefElementTypeInterface
+]> {
+  let summary = "";
+  let description = [{
+    TODO
+  }];
+}
 
 #endif // KTIR_DIALECT_SPYRE_SPYRETYPES_TD

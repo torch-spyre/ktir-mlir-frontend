@@ -34,6 +34,8 @@ def Spyre_Dialect : Dialect {
     map to intrinsics available to users of the IBM Spyre device.
   }];
 
+  let useDefaultTypePrinterParser = 1;
+
   let extraClassDeclaration = [{
    private:
     void registerAttributes();
