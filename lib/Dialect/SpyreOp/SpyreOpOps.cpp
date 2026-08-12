@@ -1,4 +1,4 @@
-//===-- Spyre.h ----------------------------------------------*- c++ -*-===//
+//===-- SpyreOpOps.cpp -------------------------------------------*- c++-*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -15,26 +15,28 @@
 // limitations under the License.
 //
 //===----------------------------------------------------------------------===//
-//
-// This file includes the entire ktdf_arch dialect.
-//
-//===----------------------------------------------------------------------===//
 
-#ifndef KTIR_DIALECT_SPYRE_SPYRE_H_
-#define KTIR_DIALECT_SPYRE_SPYRE_H_
+// clang-format off
+#include "ktir/Dialect/SpyreOp/SpyreOp.h"
+// clang-format on
 
-#include <mlir/IR/OpDefinition.h>
-#include <mlir/Interfaces/InferTypeOpInterface.h>
-#include <mlir/Interfaces/SideEffectInterfaces.h>
-
-#include "ktir/Dialect/Spyre/SpyreAttrs.h"  // IWYU pragma: export
-#include "ktir/Dialect/Spyre/SpyreTypes.h"  // IWYU pragma: export
+using namespace mlir;
+using namespace mlir::spyreop;
 
 //===----------------------------------------------------------------------===//
-// Tablegen Declarations
+// SpyreOpDialect
+//===----------------------------------------------------------------------===//
+
+void SpyreOpDialect::registerOps() {
+  addOperations<
+#define GET_OP_LIST
+#include "ktir/Dialect/SpyreOp/SpyreOp.cpp.inc"
+      >();
+}
+
+//===----------------------------------------------------------------------===//
+// Tablegen Definitions
 //===----------------------------------------------------------------------===//
 
 #define GET_OP_CLASSES
-#include "ktir/Dialect/Spyre/Spyre.h.inc"  // IWYU pragma: export
-
-#endif  // KTIR_DIALECT_SPYRE_SPYRE_H_
+#include "ktir/Dialect/SpyreOp/SpyreOp.cpp.inc"

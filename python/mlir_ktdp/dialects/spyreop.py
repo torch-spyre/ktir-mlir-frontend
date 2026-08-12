@@ -14,4 +14,4 @@
 # limitations under the License.
 #
 
-from ._spyre_ops_gen import *
+from ._spyreop_ops_gen import *

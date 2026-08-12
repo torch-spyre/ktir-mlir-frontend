@@ -1,4 +1,4 @@
-//===-- SpyreTypes.cpp ------------------------------------------*- c++ -*-===//
+//===-- SpyreOp.h -----------------------------------------------*- c++ -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -15,31 +15,26 @@
 // limitations under the License.
 //
 //===----------------------------------------------------------------------===//
-
-#include "ktir/Dialect/Spyre/SpyreTypes.h"
-
-#include <llvm/ADT/TypeSwitch.h>
-#include <mlir/IR/Builders.h>
-#include <mlir/IR/BuiltinDialect.h>
-#include <mlir/IR/DialectImplementation.h>
-
-using namespace mlir;
-using namespace mlir::spyre;
-
-//===----------------------------------------------------------------------===//
-// SpyreDialect
+//
+// This file includes the entire spyreop dialect.
+//
 //===----------------------------------------------------------------------===//
 
-void SpyreDialect::registerTypes() {
-  addTypes<
-#define GET_TYPEDEF_LIST
-#include "ktir/Dialect/Spyre/SpyreTypes.cpp.inc"
-      >();
-}
+#ifndef KTIR_DIALECT_SPYREOP_SPYREOP_H_
+#define KTIR_DIALECT_SPYREOP_SPYREOP_H_
+
+#include <mlir/IR/OpDefinition.h>
+#include <mlir/Interfaces/InferTypeOpInterface.h>
+#include <mlir/Interfaces/SideEffectInterfaces.h>
+
+#include "ktir/Dialect/SpyreOp/SpyreOpAttrs.h"  // IWYU pragma: export
+#include "ktir/Dialect/SpyreOp/SpyreOpTypes.h"  // IWYU pragma: export
 
 //===----------------------------------------------------------------------===//
-// Tablegen Definitions
+// Tablegen Declarations
 //===----------------------------------------------------------------------===//
 
-#define GET_TYPEDEF_CLASSES
-#include "ktir/Dialect/Spyre/SpyreTypes.cpp.inc"
+#define GET_OP_CLASSES
+#include "ktir/Dialect/SpyreOp/SpyreOp.h.inc"  // IWYU pragma: export
+
+#endif  // KTIR_DIALECT_SPYREOP_SPYREOP_H_

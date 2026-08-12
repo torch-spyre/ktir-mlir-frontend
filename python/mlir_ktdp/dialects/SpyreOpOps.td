@@ -1,4 +1,4 @@
-//===-- SpyreAttrs.h --------------------------------------------*- c++ -*-===//
+//===-- SpyreOpOps.td --------------------------------------*- tablegen -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -16,20 +16,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file defines the attributes in the spyre dialect.
+// Wrapper that pulls in all the spyreop dialect ops for Python bindings.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef KTIR_DIALECT_SPYRE_SPYREATTRS_H_
-#define KTIR_DIALECT_SPYRE_SPYREATTRS_H_
-
-#include <mlir/IR/Attributes.h>
-#include <mlir/IR/BuiltinAttributeInterfaces.h>
-
-#include "ktir/Dialect/Spyre/SpyreDialect.h"  // IWYU pragma: keep
-
-/// Auto-generated includes.
-#define GET_ATTRDEF_CLASSES
-#include "ktir/Dialect/Spyre/SpyreAttrs.h.inc"  // IWYU pragma: export
-
-#endif  // KTIR_DIALECT_SPYRE_SPYREATTRS_H_
+include "ktir/Dialect/SpyreOp/SpyreOp.td"

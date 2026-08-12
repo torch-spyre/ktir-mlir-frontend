@@ -10,7 +10,7 @@
 
 #include "ktir/Conversion/Passes.h"
 #include "ktir/Dialect/KTDP/KTDPDialect.h"
-#include "ktir/Dialect/Spyre/SpyreDialect.h"
+#include "ktir/Dialect/SpyreOp/SpyreOpDialect.h"
 
 using namespace mlir;
 
@@ -19,7 +19,7 @@ auto main(int argc, char** argv) -> int {
   ktir::registerKTIRConversionPasses();
 
   DialectRegistry registry;
-  registry.insert<ktdp::KtdpDialect, spyre::SpyreDialect>();
+  registry.insert<ktdp::KtdpDialect, spyreop::SpyreOpDialect>();
   registerAllDialects(registry);
   registerAllExtensions(registry);
 

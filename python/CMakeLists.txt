@@ -47,10 +47,10 @@ declare_mlir_dialect_python_bindings(
 declare_mlir_dialect_python_bindings(
   ADD_TO_PARENT KTIRPythonSources.Dialects
   ROOT_DIR "${PYTHON_ROOT_DIR}"
-  TD_FILE dialects/SpyreOps.td
+  TD_FILE dialects/SpyreOpOps.td
   SOURCES 
-    dialects/spyre.py
-  DIALECT_NAME spyre
+    dialects/spyreop.py
+  DIALECT_NAME spyreop
 )
 
 ################################################################################

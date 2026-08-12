@@ -1,2 +1,2 @@
 add_subdirectory(KTDP)
-add_subdirectory(Spyre)
+add_subdirectory(SpyreOp)

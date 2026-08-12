@@ -1,4 +1,4 @@
-//===-- SpyreTypes.h --------------------------------------------*- c++ -*-===//
+//===-- SpyreOpAttrs.h ------------------------------------------*- c++ -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -16,17 +16,20 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file defines the types in the spyre dialect.
+// This file defines the attributes in the spyreop dialect.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef KTIR_DIALECT_SPYRE_SPYRETYPES_H_
-#define KTIR_DIALECT_SPYRE_SPYRETYPES_H_
+#ifndef KTIR_DIALECT_SPYREOP_SPYREOPATTRS_H_
+#define KTIR_DIALECT_SPYREOP_SPYREOPATTRS_H_
 
-#include "ktir/Dialect/Spyre/SpyreAttrs.h"  // IWYU pragma: keep
+#include <mlir/IR/Attributes.h>
+#include <mlir/IR/BuiltinAttributeInterfaces.h>
+
+#include "ktir/Dialect/SpyreOp/SpyreOpDialect.h"  // IWYU pragma: keep
 
 /// Auto-generated includes.
-#define GET_TYPEDEF_CLASSES
-#include "ktir/Dialect/Spyre/SpyreTypes.h.inc"  // IWYU pragma: export
+#define GET_ATTRDEF_CLASSES
+#include "ktir/Dialect/SpyreOp/SpyreOpAttrs.h.inc"  // IWYU pragma: export
 
-#endif  // KTIR_DIALECT_SPYRE_SPYRETYPES_H_
+#endif  // KTIR_DIALECT_SPYREOP_SPYREOPATTRS_H_

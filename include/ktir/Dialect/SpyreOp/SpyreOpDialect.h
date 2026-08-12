@@ -1,4 +1,4 @@
-//===-- SpyreDialect.cpp ----------------------------------------*- c++ -*-===//
+//===-- SpyreOpDialect.h ----------------------------------------*- c++ -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -15,26 +15,18 @@
 // limitations under the License.
 //
 //===----------------------------------------------------------------------===//
-
-#include "ktir/Dialect/Spyre/SpyreDialect.h"
-
-#include <mlir/IR/DialectImplementation.h>
-
-using namespace mlir;
-using namespace mlir::spyre;
-
-//===----------------------------------------------------------------------===//
-// Tablegen Definitions
+//
+// This file defines the spyreop dialect.
+//
 //===----------------------------------------------------------------------===//
 
-#include "ktir/Dialect/Spyre/SpyreDialect.cpp.inc"
+#ifndef KTIR_DIALECT_SPYREOP_SPYREOPDIALECT_H_
+#define KTIR_DIALECT_SPYREOP_SPYREOPDIALECT_H_
 
-//===----------------------------------------------------------------------===//
-// SpyreDialect
-//===----------------------------------------------------------------------===//
+#include <mlir/IR/Dialect.h>
+#include <mlir/IR/DialectInterface.h>
 
-void SpyreDialect::initialize() {
-  registerAttributes();
-  registerOps();
-  registerTypes();
-}
+/// Auto-generated includes.
+#include "ktir/Dialect/SpyreOp/SpyreOpDialect.h.inc"  // IWYU pragma: export
+
+#endif  // KTIR_DIALECT_SPYREOP_SPYREOPDIALECT_H_

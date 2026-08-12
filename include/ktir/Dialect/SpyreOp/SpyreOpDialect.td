@@ -1,4 +1,4 @@
-//===-- SpyreDialect.td ------------------------------------*- tablegen -*-===//
+//===-- SpyreOpDialect.td ----------------------------------*- tablegen -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -16,21 +16,21 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file defines the spyre dialect for IBM Spyre intrinsics.
+// This file defines the spyreop dialect for IBM Spyre intrinsics.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef KTIR_DIALECT_SPYRE_SPYREDIALECT_TD
-#define KTIR_DIALECT_SPYRE_SPYREDIALECT_TD
+#ifndef KTIR_DIALECT_SPYREOP_SPYREOPDIALECT_TD
+#define KTIR_DIALECT_SPYREOP_SPYREOPDIALECT_TD
 
 include "mlir/IR/OpBase.td"
 
-def Spyre_Dialect : Dialect {
-  let name = "spyre";
-  let cppNamespace = "::mlir::spyre";
+def SpyreOp_Dialect : Dialect {
+  let name = "spyreop";
+  let cppNamespace = "::mlir::spyreop";
   let summary = "IBM Spyre Intrinsics Dialect";
   let description = [{
-    The `spyre` dialect exposes a set of attributes, types and operations that
+    The `spyreop` dialect exposes a set of attributes, types and operations that
     map to intrinsics available to users of the IBM Spyre device.
   }];
 
@@ -44,4 +44,4 @@ def Spyre_Dialect : Dialect {
   }];
 }
 
-#endif // KTIR_DIALECT_SPYRE_SPYREDIALECT_TD
+#endif // KTIR_DIALECT_SPYREOP_SPYREOPDIALECT_TD

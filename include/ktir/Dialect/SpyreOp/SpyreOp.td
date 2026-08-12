@@ -1,4 +1,4 @@
-//===-- Spyre.td -------------------------------------------*- tablegen -*-===//
+//===-- SpyreOp.td -----------------------------------------*- tablegen -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -16,21 +16,21 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file defines the operations in the spyre dialect.
+// This file defines the operations in the spyreop dialect.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef KTIR_DIALECT_SPYRE_SPYRE_TD
-#define KTIR_DIALECT_SPYRE_SPYRE_TD
+#ifndef KTIR_DIALECT_SPYREOP_SPYREOP_TD
+#define KTIR_DIALECT_SPYREOP_SPYREOP_TD
 
 include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
-include "ktir/Dialect/Spyre/SpyreTypes.td"
+include "ktir/Dialect/SpyreOp/SpyreOpTypes.td"
 
-class Spyre_Op<string mnemonic, list<Trait> traits = []> :
-    Op<Spyre_Dialect, mnemonic, traits> {
+class SpyreOp_Op<string mnemonic, list<Trait> traits = []> :
+    Op<SpyreOp_Dialect, mnemonic, traits> {
 }
 
 //===----------------------------------------------------------------------===//
@@ -39,18 +39,18 @@ class Spyre_Op<string mnemonic, list<Trait> traits = []> :
 
 // FIXME: Deprecate F16 IEEE-754 floating point type in favor of DF16.
 
-class Spyre_IntrinsicOp<
+class SpyreOp_IntrinsicOp<
   string mnemonic, 
   dag inputs, 
   dag outputs = (outs !getdagarg<Type>(inputs, 0):$result), 
   list<Trait> traits = [SameOperandsAndResultType]> 
-  : Spyre_Op<mnemonic, traits # [Pure]> 
+  : SpyreOp_Op<mnemonic, traits # [Pure]> 
 {
   let arguments = inputs;  
   let results = outputs;
 }
 
-def Spyre_AddI32ToI32 : Spyre_IntrinsicOp<
+def Spyre_AddI32ToI32 : SpyreOp_IntrinsicOp<
   "addi32toi32",
   (ins I32:$lhs, I32:$rhs)
 > {
@@ -60,7 +60,7 @@ def Spyre_AddI32ToI32 : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_AddI64ToI64 : Spyre_IntrinsicOp<
+def Spyre_AddI64ToI64 : SpyreOp_IntrinsicOp<
   "addi64toi64", 
   (ins I64:$lhs, I64:$rhs)> {
   let summary = "";
@@ -69,7 +69,7 @@ def Spyre_AddI64ToI64 : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_Exp : Spyre_IntrinsicOp<
+def Spyre_Exp : SpyreOp_IntrinsicOp<
   "exp", 
   (ins AnyTypeOf<[F32]>:$operand)
 > {
@@ -79,9 +79,9 @@ def Spyre_Exp : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_GeLU : Spyre_IntrinsicOp<
+def Spyre_GeLU : SpyreOp_IntrinsicOp<
   "gelu", 
-  (ins AnyTypeOf<[F16, Spyre_DF16]>:$operand)
+  (ins AnyTypeOf<[F16, SpyreOp_DF16]>:$operand)
 > {
   let summary = "";
   let description = [{
@@ -89,7 +89,7 @@ def Spyre_GeLU : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_Idx32ToAddr : Spyre_IntrinsicOp<
+def Spyre_Idx32ToAddr : SpyreOp_IntrinsicOp<
   "idx32toaddr", 
   (ins 
     I32:$indices,
@@ -105,9 +105,9 @@ def Spyre_Idx32ToAddr : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_LayerNormScale : Spyre_IntrinsicOp<
+def Spyre_LayerNormScale : SpyreOp_IntrinsicOp<
   "layernormscale", 
-  (ins AnyTypeOf<[F16, Spyre_DF16, F32]>:$operand)
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
   let summary = "";
   let description = [{
@@ -115,7 +115,7 @@ def Spyre_LayerNormScale : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_MulI32ToI32 : Spyre_IntrinsicOp<
+def Spyre_MulI32ToI32 : SpyreOp_IntrinsicOp<
   "muli32toi32",
   (ins I32:$operand)
 > {
@@ -125,9 +125,9 @@ def Spyre_MulI32ToI32 : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_RealDiv : Spyre_IntrinsicOp<
+def Spyre_RealDiv : SpyreOp_IntrinsicOp<
   "realdiv", 
-  (ins AnyTypeOf<[F16, Spyre_DF16, F32]>:$operand)
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
   let summary = "";
   let description = [{
@@ -135,9 +135,9 @@ def Spyre_RealDiv : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_Reciprocal : Spyre_IntrinsicOp<
+def Spyre_Reciprocal : SpyreOp_IntrinsicOp<
   "reciprocal", 
-  (ins AnyTypeOf<[F16, Spyre_DF16, F32]>:$operand)
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
   let summary = "";
   let description = [{
@@ -145,9 +145,9 @@ def Spyre_Reciprocal : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_Sigmoid : Spyre_IntrinsicOp<
+def Spyre_Sigmoid : SpyreOp_IntrinsicOp<
   "sigmoid", 
-  (ins AnyTypeOf<[F16, Spyre_DF16, F32]>:$operand)
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
   let summary = "";
   let description = [{
@@ -155,9 +155,9 @@ def Spyre_Sigmoid : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_Softplus : Spyre_IntrinsicOp<
+def Spyre_Softplus : SpyreOp_IntrinsicOp<
   "softplus", 
-  (ins AnyTypeOf<[F16, Spyre_DF16]>:$operand)
+  (ins AnyTypeOf<[F16, SpyreOp_DF16]>:$operand)
 > {
   let summary = "";
   let description = [{
@@ -165,9 +165,9 @@ def Spyre_Softplus : Spyre_IntrinsicOp<
   }];
 }
 
-def Spyre_Sqrt : Spyre_IntrinsicOp<
+def Spyre_Sqrt : SpyreOp_IntrinsicOp<
   "sqrt", 
-  (ins AnyTypeOf<[F16, Spyre_DF16, F32]>:$operand)
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
   let summary = "";
   let description = [{

@@ -1,4 +1,4 @@
-//===-- SpyreAttrs.td --------------------------------------*- tablegen -*-===//
+//===-- SpyreOpAttrs.td ------------------------------------*- tablegen -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -16,15 +16,13 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file defines the attributes in the spyre dialect.
+// This file defines the attributes in the spyreop dialect.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef KTIR_DIALECT_SPYRE_SPYREATTRS_TD
-#define KTIR_DIALECT_SPYRE_SPYREATTRS_TD
+#ifndef KTIR_DIALECT_SPYREOP_SPYREOPATTRS_TD
+#define KTIR_DIALECT_SPYREOP_SPYREOPATTRS_TD
 
-include "ktir/Dialect/Spyre/SpyreDialect.td"
+include "ktir/Dialect/SpyreOp/SpyreOpDialect.td"
 
-// TODO: Maybe port `ktdp.spyre_memory_space` attribute?
-
-#endif // KTIR_DIALECT_SPYRE_SPYREATTRS_TD
+#endif // KTIR_DIALECT_SPYREOP_SPYREOPATTRS_TD

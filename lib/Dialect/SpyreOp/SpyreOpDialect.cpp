@@ -1,4 +1,4 @@
-//===-- SpyreAttrs.cpp ------------------------------------------*- c++ -*-===//
+//===-- SpyreOpDialect.cpp --------------------------------------*- c++ -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -16,30 +16,25 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "ktir/Dialect/Spyre/SpyreAttrs.h"
+#include "ktir/Dialect/SpyreOp/SpyreOpDialect.h"
 
-#include <llvm/ADT/TypeSwitch.h>
-#include <mlir/IR/Attributes.h>
-#include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/DialectImplementation.h>
 
 using namespace mlir;
-using namespace mlir::spyre;
-
-//===----------------------------------------------------------------------===//
-// SpyreDialect
-//===----------------------------------------------------------------------===//
-
-void SpyreDialect::registerAttributes() {
-  addAttributes<
-#define GET_ATTRDEF_LIST
-#include "ktir/Dialect/Spyre/SpyreAttrs.cpp.inc"
-      >();
-}
+using namespace mlir::spyreop;
 
 //===----------------------------------------------------------------------===//
 // Tablegen Definitions
 //===----------------------------------------------------------------------===//
 
-#define GET_ATTRDEF_CLASSES
-#include "ktir/Dialect/Spyre/SpyreAttrs.cpp.inc"
+#include "ktir/Dialect/SpyreOp/SpyreOpDialect.cpp.inc"
+
+//===----------------------------------------------------------------------===//
+// SpyreOpDialect
+//===----------------------------------------------------------------------===//
+
+void SpyreOpDialect::initialize() {
+  registerAttributes();
+  registerOps();
+  registerTypes();
+}

@@ -1,4 +1,4 @@
-//===-- SpyreOps.cpp ---------------------------------------------*- c++-*-===//
+//===-- SpyreOpTypes.cpp ----------------------------------------*- c++ -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -16,21 +16,24 @@
 //
 //===----------------------------------------------------------------------===//
 
-// clang-format off
-#include "ktir/Dialect/Spyre/Spyre.h"
-// clang-format on
+#include "ktir/Dialect/SpyreOp/SpyreOpTypes.h"
+
+#include <llvm/ADT/TypeSwitch.h>
+#include <mlir/IR/Builders.h>
+#include <mlir/IR/BuiltinDialect.h>
+#include <mlir/IR/DialectImplementation.h>
 
 using namespace mlir;
-using namespace mlir::spyre;
+using namespace mlir::spyreop;
 
 //===----------------------------------------------------------------------===//
-// SpyreDialect
+// SpyreOpDialect
 //===----------------------------------------------------------------------===//
 
-void SpyreDialect::registerOps() {
-  addOperations<
-#define GET_OP_LIST
-#include "ktir/Dialect/Spyre/Spyre.cpp.inc"
+void SpyreOpDialect::registerTypes() {
+  addTypes<
+#define GET_TYPEDEF_LIST
+#include "ktir/Dialect/SpyreOp/SpyreOpTypes.cpp.inc"
       >();
 }
 
@@ -38,5 +41,5 @@ void SpyreDialect::registerOps() {
 // Tablegen Definitions
 //===----------------------------------------------------------------------===//
 
-#define GET_OP_CLASSES
-#include "ktir/Dialect/Spyre/Spyre.cpp.inc"
+#define GET_TYPEDEF_CLASSES
+#include "ktir/Dialect/SpyreOp/SpyreOpTypes.cpp.inc"
