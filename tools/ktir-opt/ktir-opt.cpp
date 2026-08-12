@@ -14,7 +14,7 @@
 
 using namespace mlir;
 
-auto main(int argc, char** argv) -> int {
+auto main(int argc, char **argv) -> int {
   registerAllPasses();
   ktir::registerKTIRConversionPasses();
 

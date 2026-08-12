@@ -72,7 +72,7 @@ declare_mlir_python_extension(KTIRPythonExtensions.Main
     MLIRCAPITensor
     MLIRCAPITransforms
     KTIRKTDPCAPI
-    # TODO: Add KTIRSpyreCAPI
+    # TODO: Add KTIRSpyreOpCAPI
   PRIVATE_LINK_LIBS
     LLVMSupport
 )

@@ -12,7 +12,7 @@
 
 using namespace mlir;
 
-auto main(int argc, char** argv) -> int {
+auto main(int argc, char **argv) -> int {
   DialectRegistry registry;
   registry.insert<ktdp::KtdpDialect, spyreop::SpyreOpDialect>();
   registerAllDialects(registry);
