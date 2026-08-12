@@ -25,4 +25,12 @@
 
 include "ktir/Dialect/SpyreOp/SpyreOpDialect.td"
 
+//===----------------------------------------------------------------------===//
+// Attribute Constraints
+//===----------------------------------------------------------------------===//
+
+def FloatNonZero : AttrConstraint<
+    CPred<"!::llvm::cast<::mlir::FloatAttr>($_self).getValue().isZero()">,
+    "which is non-zero">;
+
 #endif // KTIR_DIALECT_SPYREOP_SPYREOPATTRS_TD

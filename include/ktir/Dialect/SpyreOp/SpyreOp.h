@@ -23,6 +23,7 @@
 #ifndef KTIR_DIALECT_SPYREOP_SPYREOP_H_
 #define KTIR_DIALECT_SPYREOP_SPYREOP_H_
 
+#include <mlir/Bytecode/BytecodeOpInterface.h>
 #include <mlir/IR/OpDefinition.h>
 #include <mlir/Interfaces/InferTypeOpInterface.h>
 #include <mlir/Interfaces/SideEffectInterfaces.h>

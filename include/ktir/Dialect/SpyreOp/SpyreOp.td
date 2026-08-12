@@ -48,60 +48,49 @@ class SpyreOp_IntrinsicOp<
 {
   let arguments = inputs;  
   let results = outputs;
+
+  let assemblyFormat = "operands attr-dict `:` type($result)";
 }
 
 def Spyre_AddI32ToI32 : SpyreOp_IntrinsicOp<
   "addi32toi32",
   (ins I32:$lhs, I32:$rhs)
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Adds two 32-bit integers";
 }
 
 def Spyre_AddI64ToI64 : SpyreOp_IntrinsicOp<
   "addi64toi64", 
   (ins I64:$lhs, I64:$rhs)> {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Adds two 64-bit integers";
 }
 
 def Spyre_Exp : SpyreOp_IntrinsicOp<
   "exp", 
   (ins AnyTypeOf<[F32]>:$operand)
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Evaluates the exponential function `exp(x)`";
 }
 
 def Spyre_GeLU : SpyreOp_IntrinsicOp<
   "gelu", 
   (ins AnyTypeOf<[F16, SpyreOp_DF16]>:$operand)
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Evaluates the GeLU function `x * CDF(x)`";
 }
 
 def Spyre_Idx32ToAddr : SpyreOp_IntrinsicOp<
   "idx32toaddr", 
   (ins 
-    I32:$indices,
-    I32:$base_address,
-    I32:$stride
-  ),
-  (outs I32:$result),
-  [AllTypesMatch<["indices", "result"]>]
+    I32:$index,
+    I32Attr:$base_address,
+    I32Attr:$stride
+  )
 > {
-  let summary = "";
-  let description = [{
-    TODO
+  let summary = "Generates an address via `b + (s*i)`";
+
+  let assemblyFormat = [{
+    $index `base` $base_address `stride` $stride attr-dict
   }];
 }
 
@@ -109,59 +98,53 @@ def Spyre_LayerNormScale : SpyreOp_IntrinsicOp<
   "layernormscale", 
   (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Computes the scaling part of the `LayerNorm` function";
 }
 
 def Spyre_MulI32ToI32 : SpyreOp_IntrinsicOp<
   "muli32toi32",
   (ins I32:$operand)
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Multiplies two 32-bit integers into a 32-bit result";
 }
 
 def Spyre_RealDiv : SpyreOp_IntrinsicOp<
   "realdiv", 
-  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
+  (ins 
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Divides two real numbers";
 }
 
 def Spyre_Reciprocal : SpyreOp_IntrinsicOp<
   "reciprocal", 
   (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Computes the multiplicative inverse";
 }
 
 def Spyre_Sigmoid : SpyreOp_IntrinsicOp<
   "sigmoid", 
   (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Evaluates the sigmoid function `1 / (1 + exp(-x))`";
 }
 
 def Spyre_Softplus : SpyreOp_IntrinsicOp<
   "softplus", 
-  (ins AnyTypeOf<[F16, SpyreOp_DF16]>:$operand)
+  (ins 
+    AnyTypeOf<[F16, SpyreOp_DF16]>:$operand,
+    // To store F16 and DF16 without a DF16Attr, we need an F32Attr.
+    ConfinedAttr<F32Attr, [FloatNonZero]>:$beta,
+    F32Attr:$threshold
+  )
 > {
-  let summary = "";
-  let description = [{
-    TODO
+  let summary = "Evaluates the softplus function `1/b * log(1 + b*exp(x))`";
+
+  let assemblyFormat = [{
+    $operand `beta` $beta `threshold` $threshold attr-dict `:` type($result)
   }];
 }
 
@@ -169,10 +152,7 @@ def Spyre_Sqrt : SpyreOp_IntrinsicOp<
   "sqrt", 
   (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
 > {
-  let summary = "";
-  let description = [{
-    TODO
-  }];
+  let summary = "Computes the square root";
 }
 
 #endif  // KTIR_DIALECT_SPYRE_SPYRE_TD

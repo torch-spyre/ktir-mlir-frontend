@@ -18,4 +18,5 @@ add_ktir_library(KTIRSpyreOpDialect
     MLIRIR
     MLIRInferTypeOpInterface
     MLIRSideEffectInterfaces
+    MLIRBytecodeOpInterface
 )

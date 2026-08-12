@@ -20,6 +20,10 @@
 #include "ktir/Dialect/SpyreOp/SpyreOp.h"
 // clang-format on
 
+#include <mlir/IR/BuiltinTypes.h>
+#include <mlir/IR/DialectImplementation.h>
+#include <mlir/IR/OpImplementation.h>
+
 using namespace mlir;
 using namespace mlir::spyreop;
 
