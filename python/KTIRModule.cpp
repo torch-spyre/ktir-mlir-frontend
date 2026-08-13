@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "ktir-c/Dialect/KTDP.h"
+#include "ktir-c/Dialect/SpyreOp.h"
 #include "mlir-c/Dialect/Arith.h"
 #include "mlir-c/Dialect/Func.h"
 #include "mlir-c/Dialect/Linalg.h"
@@ -99,6 +100,7 @@ NB_MODULE(_ktir, m) {
             mlirGetDialectHandle__linalg__(),
             mlirGetDialectHandle__math__(),
             mlirGetDialectHandle__scf__(),
+            mlirGetDialectHandle__spyreop__(),
             mlirGetDialectHandle__tensor__(),
         }) {
           mlirDialectHandleRegisterDialect(handle, context_);
