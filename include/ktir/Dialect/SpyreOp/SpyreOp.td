@@ -94,7 +94,7 @@ def Spyre_Idx32ToAddr : SpyreOp_IntrinsicOp<
   let summary = "Generates an address via `b + (s*i)`";
 
   let assemblyFormat = [{
-    $index `base` $base_address `stride` $stride attr-dict
+    $index `base` custom<Hex32Literal>($base_address) `stride` $stride attr-dict
   }];
 }
 
