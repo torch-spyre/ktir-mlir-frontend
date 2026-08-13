@@ -5,5 +5,3 @@ func.func @softplus_beta_zero(%arg0: f16) {
   spyreop.softplus %arg0 beta 0.0 threshold 0.0 : f16
   return
 }
-
-// -----
