@@ -54,4 +54,4 @@ def SpyreOp_DF16 : SpyreOp_Type<"DF16", "df16", [
   }];
 }
 
-#endif // KTIR_DIALECT_SPYRE_SPYRETYPES_TD
+#endif // KTIR_DIALECT_SPYREOP_SPYREOPTYPES_TD

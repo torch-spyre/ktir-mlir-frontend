@@ -161,4 +161,4 @@ def Spyre_Sqrt : SpyreOp_IntrinsicOp<
   let summary = "Computes the square root";
 }
 
-#endif  // KTIR_DIALECT_SPYRE_SPYRE_TD
+#endif  // KTIR_DIALECT_SPYREOP_SPYREOP_TD
