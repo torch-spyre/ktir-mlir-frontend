@@ -11,7 +11,7 @@ set(PROJECT_INCLUDE_DIRS
 # Creates a TableGen target and adds it to ktir-headers.
 function(add_ktir_tablegen_target name)
   add_public_tablegen_target(${name})
-  set(TABLEGEN_OUTPUT "")
+  set(TABLEGEN_OUTPUT "" PARENT_SCOPE)
   add_dependencies(ktir-headers ${name})
 endfunction()
 
