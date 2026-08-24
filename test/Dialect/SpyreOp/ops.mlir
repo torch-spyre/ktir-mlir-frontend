@@ -81,6 +81,15 @@ func.func @reciprocal(%arg0: !spyreop.df16) -> !spyreop.df16 {
   return %0 : !spyreop.df16
 }
 
+// CHECK-LABEL: func.func @rsqrt(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @rsqrt(%arg0: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.rsqrt %[[A]] : !spyreop.df16
+  %0 = spyreop.rsqrt %arg0 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
 // CHECK-LABEL: func.func @sigmoid(
 // CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
 func.func @sigmoid(%arg0: !spyreop.df16) -> !spyreop.df16 {

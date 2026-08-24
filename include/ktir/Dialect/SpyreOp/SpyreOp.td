@@ -131,6 +131,13 @@ def Spyre_Reciprocal : SpyreOp_IntrinsicOp<
   let summary = "Computes the multiplicative inverse";
 }
 
+def Spyre_RSqrt : SpyreOp_IntrinsicOp<
+  "rsqrt",
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
+> {
+  let summary = "Computes the reciprocal of the square root";
+}
+
 def Spyre_Sigmoid : SpyreOp_IntrinsicOp<
   "sigmoid", 
   (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
