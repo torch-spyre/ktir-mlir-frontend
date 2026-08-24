@@ -90,6 +90,15 @@ func.func @sigmoid(%arg0: !spyreop.df16) -> !spyreop.df16 {
   return %0 : !spyreop.df16
 }
 
+// CHECK-LABEL: func.func @silu(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @silu(%arg0: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.silu %[[A]] : !spyreop.df16
+  %0 = spyreop.silu %arg0 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
 // CHECK-LABEL: func.func @softplus(
 // CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
 func.func @softplus(%arg0: !spyreop.df16) -> !spyreop.df16 {

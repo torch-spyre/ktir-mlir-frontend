@@ -138,6 +138,13 @@ def Spyre_Sigmoid : SpyreOp_IntrinsicOp<
   let summary = "Evaluates the sigmoid function `1 / (1 + exp(-x))`";
 }
 
+def Spyre_SiLU : SpyreOp_IntrinsicOp<
+  "silu",
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
+> {
+  let summary = "Evaluates the SiLU function `x * sigmoid(x)`";
+}
+
 def Spyre_Softplus : SpyreOp_IntrinsicOp<
   "softplus", 
   (ins 
