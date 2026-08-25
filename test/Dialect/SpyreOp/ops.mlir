@@ -127,19 +127,19 @@ func.func @sqrt(%arg0: !spyreop.df16) -> !spyreop.df16 {
 }
 
 // CHECK-LABEL: func.func @slice_reduction_in_f16(
-// CHECK-SAME:    %[[A:.*]]: tensor<64xf16>) -> tensor<64xf16>
-func.func @slice_reduction_in_f16(%arg0: tensor<64xf16>) -> tensor<64xf16> {
-  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice>} : tensor<64xf16> -> tensor<64xf16>
-  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice>} : tensor<64xf16> -> tensor<64xf16>
-  // CHECK:         return %[[R]] : tensor<64xf16>
-  return %0 : tensor<64xf16>
+// CHECK-SAME:    %[[A:.*]]: memref<64xf16>) -> memref<64xf16>
+func.func @slice_reduction_in_f16(%arg0: memref<64xf16>) -> memref<64xf16> {
+  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice>} : memref<64xf16> -> memref<64xf16>
+  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice>} : memref<64xf16> -> memref<64xf16>
+  // CHECK:         return %[[R]] : memref<64xf16>
+  return %0 : memref<64xf16>
 }
 
 // CHECK-LABEL: func.func @slice_reduction_across_f16(
-// CHECK-SAME:    %[[A:.*]]: tensor<64xf16>) -> tensor<64xf16>
-func.func @slice_reduction_across_f16(%arg0: tensor<64xf16>) -> tensor<64xf16> {
-  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice>} : tensor<64xf16> -> tensor<64xf16>
-  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice>} : tensor<64xf16> -> tensor<64xf16>
-  // CHECK:         return %[[R]] : tensor<64xf16>
-  return %0 : tensor<64xf16>
+// CHECK-SAME:    %[[A:.*]]: memref<64xf16>) -> memref<64xf16>
+func.func @slice_reduction_across_f16(%arg0: memref<64xf16>) -> memref<64xf16> {
+  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice>} : memref<64xf16> -> memref<64xf16>
+  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice>} : memref<64xf16> -> memref<64xf16>
+  // CHECK:         return %[[R]] : memref<64xf16>
+  return %0 : memref<64xf16>
 }

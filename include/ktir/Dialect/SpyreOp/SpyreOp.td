@@ -177,7 +177,7 @@ def Spyre_Sqrt : SpyreOp_IntrinsicOp<
 
 // slice_reduction operates on a full stick at a time.
 def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
-    [Pure, SameOperandsAndResultType]> {
+    [SameOperandsAndResultType]> {
   let summary = "Reduces elements within or across slices";
   let description = [{
     Collects a n-element row and performs a reduction controlled by two
@@ -191,18 +191,18 @@ def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
         first slice hold the accumulated result of counterpart elements in all
         slices.
 
-    The op takes and returns the same n-wide tensor type, matching
-    the compute unit register width.  At the post_lowering stage this op is
-    replaced by the FMA send/receive sequence defined in the device's
-    `patterns ["post_lowering"]` block.
+    The op takes a register-file memref as both operand and result.
+    At the post_lowering stage this op is replaced by the FMA send/receive sequence
+    defined in the device's `patterns ["post_lowering"]` block, which reads from
+    and writes back to that same memref view.
   }];
 
-  let arguments = (ins AnyTypeOf<[AnyRankedTensor]>:$operand,
+  let arguments = (ins AnyMemRef:$operand,
                        SpyreOp_ReductionKindAttr:$reduction_kind,
                        SpyreOp_ReductionScopeAttr:$reduction_scope);
-  let results   = (outs AnyTypeOf<[AnyRankedTensor]>:$result);
+  let results   = (outs AnyMemRef:$result);
 
-  // Operand and result share the same type (enforced by SameOperandsAndResultType).
+  // Operand and result share the same memref type (SameOperandsAndResultType).
   let assemblyFormat = "$operand attr-dict `:` type($operand) `->` type($result)";
 }
 
