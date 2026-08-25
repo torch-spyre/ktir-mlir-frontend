@@ -29,6 +29,8 @@
 #include "ktir/Dialect/SpyreOp/SpyreOpDialect.h"  // IWYU pragma: keep
 
 /// Auto-generated includes.
+#include "ktir/Dialect/SpyreOp/SpyreOpEnums.h.inc"  // IWYU pragma: export
+
 #define GET_ATTRDEF_CLASSES
 #include "ktir/Dialect/SpyreOp/SpyreOpAttrs.h.inc"  // IWYU pragma: export
 

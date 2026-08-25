@@ -175,4 +175,35 @@ def Spyre_Sqrt : SpyreOp_IntrinsicOp<
   let summary = "Computes the square root";
 }
 
+// slice_reduction operates on a full stick at a time.
+def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
+    [Pure, SameOperandsAndResultType]> {
+  let summary = "Reduces elements within or across slices";
+  let description = [{
+    Collects a n-element row and performs a reduction controlled by two
+    attributes:
+
+    - `reduction_kind` selects the operator (e.g. `"add"`, `"max"`).
+    - `reduction_scope` selects the direction:
+      - `"in_slice"`:  reduces within every slice so the first element in every
+        slice holds the accumulated result of its slice.
+      - `"across_slice"`: reduces across every slice so the elements of the
+        first slice hold the accumulated result of counterpart elements in all
+        slices.
+
+    The op takes and returns the same n-wide tensor type, matching
+    the compute unit register width.  At the post_lowering stage this op is
+    replaced by the FMA send/receive sequence defined in the device's
+    `patterns ["post_lowering"]` block.
+  }];
+
+  let arguments = (ins AnyTypeOf<[AnyRankedTensor]>:$operand,
+                       SpyreOp_ReductionKindAttr:$reduction_kind,
+                       SpyreOp_ReductionScopeAttr:$reduction_scope);
+  let results   = (outs AnyTypeOf<[AnyRankedTensor]>:$result);
+
+  // Operand and result share the same type (enforced by SameOperandsAndResultType).
+  let assemblyFormat = "$operand attr-dict `:` type($operand) `->` type($result)";
+}
+
 #endif  // KTIR_DIALECT_SPYREOP_SPYREOP_TD

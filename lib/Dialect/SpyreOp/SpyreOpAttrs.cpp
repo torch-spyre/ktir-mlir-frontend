@@ -20,6 +20,7 @@
 
 #include <llvm/ADT/TypeSwitch.h>
 #include <mlir/IR/Attributes.h>
+#include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/DialectImplementation.h>
 
@@ -43,3 +44,4 @@ void SpyreOpDialect::registerAttributes() {
 
 #define GET_ATTRDEF_CLASSES
 #include "ktir/Dialect/SpyreOp/SpyreOpAttrs.cpp.inc"
+#include "ktir/Dialect/SpyreOp/SpyreOpEnums.cpp.inc"
