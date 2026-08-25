@@ -20,6 +20,7 @@ import mlir_ktdp.dialects.builtin as builtin
 import mlir_ktdp.dialects.func as func
 import mlir_ktdp.dialects.ktdp as ktdp
 import mlir_ktdp.dialects.scf as scf
+import mlir_ktdp.dialects.spyreop as spyreop
 
 
 # ---------------------------------------------------------------------------

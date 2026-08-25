@@ -1,4 +1,4 @@
-//===-- SpyreOpAttrs.cpp ----------------------------------------*- c++ -*-===//
+//===-- SpyreOpEnums.cpp ----------------------------------------*- c++ -*-===//
 //
 // Copyright 2026 The KTIR Authors.
 //
@@ -16,31 +16,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "ktir/Dialect/SpyreOp/SpyreOpAttrs.h"
-
-#include <llvm/ADT/TypeSwitch.h>
-#include <mlir/IR/Attributes.h>
-#include <mlir/IR/Builders.h>
-#include <mlir/IR/BuiltinAttributes.h>
-#include <mlir/IR/DialectImplementation.h>
-
-using namespace mlir;
-using namespace mlir::spyreop;
-
-//===----------------------------------------------------------------------===//
-// SpyreOpDialect
-//===----------------------------------------------------------------------===//
-
-void SpyreOpDialect::registerAttributes() {
-  addAttributes<
-#define GET_ATTRDEF_LIST
-#include "ktir/Dialect/SpyreOp/SpyreOpAttrs.cpp.inc"
-      >();
-}
+#include "ktir/Dialect/SpyreOp/SpyreOpEnums.h"
 
 //===----------------------------------------------------------------------===//
 // Tablegen Definitions
 //===----------------------------------------------------------------------===//
 
-#define GET_ATTRDEF_CLASSES
-#include "ktir/Dialect/SpyreOp/SpyreOpAttrs.cpp.inc"
+#include "ktir/Dialect/SpyreOp/SpyreOpEnums.cpp.inc"

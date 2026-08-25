@@ -1,10 +1,14 @@
 add_ktir_dialect(SpyreOp spyreop)
 add_ktir_doc(SpyreOp SpyreOpDialect Dialects/ -gen-dialect-doc -dialect=spyreop)
 
+set(LLVM_TARGET_DEFINITIONS SpyreOpEnums.td)
+mlir_tablegen(SpyreOpEnums.h.inc -gen-enum-decls)
+mlir_tablegen(SpyreOpEnums.cpp.inc -gen-enum-defs)
+add_ktir_tablegen_target(KTIRSpyreOpEnumsIncGen)
+add_dependencies(KTIRSpyreOpIncGen KTIRSpyreOpEnumsIncGen)
+
 set(LLVM_TARGET_DEFINITIONS SpyreOpAttrs.td)
 mlir_tablegen(SpyreOpAttrs.h.inc -gen-attrdef-decls -attrdefs-dialect=spyreop)
 mlir_tablegen(SpyreOpAttrs.cpp.inc -gen-attrdef-defs -attrdefs-dialect=spyreop)
-mlir_tablegen(SpyreOpEnums.h.inc -gen-enum-decls)
-mlir_tablegen(SpyreOpEnums.cpp.inc -gen-enum-defs)
 add_ktir_tablegen_target(KTIRSpyreOpAttrsIncGen)
 add_dependencies(KTIRSpyreOpIncGen KTIRSpyreOpAttrsIncGen)

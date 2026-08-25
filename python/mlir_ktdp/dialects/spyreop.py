@@ -16,3 +16,4 @@
 
 # Build output, absent from this source tree; does not resolve here.
 from ._spyreop_ops_gen import *  # type: ignore[import-not-found]
+from ._spyreop_enum_gen import *

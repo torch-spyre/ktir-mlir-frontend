@@ -51,6 +51,9 @@ declare_mlir_dialect_python_bindings(
   SOURCES 
     dialects/spyreop.py
   DIALECT_NAME spyreop
+  GEN_ENUM_BINDINGS
+  GEN_ENUM_BINDINGS_TD_FILE
+    dialects/SpyreOpEnums.td
 )
 
 ################################################################################

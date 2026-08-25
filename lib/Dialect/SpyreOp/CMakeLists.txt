@@ -1,6 +1,7 @@
 add_ktir_library(KTIRSpyreOpDialect
     SpyreOpAttrs.cpp
     SpyreOpDialect.cpp
+    SpyreOpEnums.cpp
     SpyreOpOps.cpp
     SpyreOpTypes.cpp
 
