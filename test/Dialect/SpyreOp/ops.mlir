@@ -37,10 +37,10 @@ func.func @gelu(%arg0: !spyreop.df16) -> !spyreop.df16 {
 }
 
 // CHECK-LABEL: func.func @idx32toaddr(
-// CHECK-SAME:    %[[A:.*]]: i32) -> i32
-func.func @idx32toaddr(%arg0: i32) -> i32 {
-  // CHECK:         %[[R:.*]] = spyreop.idx32toaddr %[[A]] base 0xDEADBEEF stride 4
-  %0 = spyreop.idx32toaddr %arg0 base 0xDEADBEEF stride 4
+// CHECK-SAME:    %[[I:.*]]: i32, %[[B:.*]]: i32, %[[S:.*]]: i32) -> i32
+func.func @idx32toaddr(%arg0: i32, %arg1: i32, %arg2: i32) -> i32 {
+  // CHECK:         %[[R:.*]] = spyreop.idx32toaddr %[[I]] base %[[B]] stride %[[S]]
+  %0 = spyreop.idx32toaddr %arg0 base %arg1 stride %arg2
   // CHECK:         return %[[R]] : i32
   return %0 : i32
 }

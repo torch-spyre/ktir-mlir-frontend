@@ -20,7 +20,6 @@
 #include "ktir/Dialect/SpyreOp/SpyreOp.h"
 // clang-format on
 
-#include <llvm/Support/NativeFormatting.h>
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/DialectImplementation.h>
@@ -28,26 +27,6 @@
 
 using namespace mlir;
 using namespace mlir::spyreop;
-
-namespace {
-
-auto parseHex32Literal(OpAsmParser& parser, IntegerAttr& attr) -> ParseResult {
-  uint32_t result;
-  if (parser.parseInteger(result)) {
-    return failure();
-  }
-
-  attr = parser.getBuilder().getI32IntegerAttr(result);
-  return success();
-}
-
-void printHex32Literal(OpAsmPrinter& printer, Operation* /*op*/,
-                       IntegerAttr attr) {
-  const auto bits = static_cast<uint32_t>(attr.getValue().getZExtValue());
-  llvm::write_hex(printer.getStream(), bits, llvm::HexPrintStyle::PrefixUpper);
-}
-
-}  // namespace
 
 //===----------------------------------------------------------------------===//
 // SpyreOpDialect
