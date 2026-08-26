@@ -178,23 +178,38 @@ def Spyre_Sqrt : SpyreOp_IntrinsicOp<
 // slice_reduction operates on a full stick at a time.
 def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
     [SameOperandsAndResultType]> {
-  let summary = "Reduces elements within or across slices";
+  let summary = "Executes one step of a within-slice or across-slice reduction";
   let description = [{
-    Collects a n-element row and performs a reduction controlled by two
-    attributes:
+    Represents a single named step in the six-step reduction sequence that the
+    hardware uses to implement a full slice reduction.  Two attributes
+    characterise each instance:
 
-    - `reduction_kind` selects the operator (e.g. `"add"`, `"max"`).
-    - `reduction_scope` selects the direction:
-      - `"in_slice"`:  reduces within every slice so the first element in every
-        slice holds the accumulated result of its slice.
-      - `"across_slice"`: reduces across every slice so the elements of the
-        first slice hold the accumulated result of counterpart elements in all
-        slices.
+    - `reduction_kind` selects the arithmetic operator (e.g. `"add"`, `"max"`).
+    - `reduction_scope` identifies the exact step:
+
+      In-slice steps (reduce within every slice, result accumulates in the
+      first element of each slice):
+      - `"in_slice_fma_src0_shuf"`: FMA where src0 is cross-lane shuffled with
+        pattern A and src2 is taken directly from the register (variant 4).
+      - `"in_slice_fma_src2_shuf"`: FMA where src0 is taken directly from the
+        register and src2 is cross-lane shuffled with pattern B (variant 5).
+      - `"in_slice_fma_both_shuf"`: FMA where both src0 and src2 are shuffled,
+        using patterns A and B respectively (variant 6).
+
+      Across-slice steps (reduce across every slice, result accumulates in the
+      first slice):
+      - `"across_slice_splat"`: Shuffle every lane to index 0 (splat) so the
+        first element of the stick fans out to all positions.
+      - `"across_slice_scan_gap"`: Prefix scan with gap=8 (left-to-right) that
+        accumulates contributions across slice boundaries.
+      - `"across_slice_fma16"`: Final multiply-and-accumulate that folds the
+        scanned values into the output register.
 
     The op takes a register-file memref as both operand and result.
-    At the post_lowering stage this op is replaced by the FMA send/receive sequence
-    defined in the device's `patterns ["post_lowering"]` block, which reads from
-    and writes back to that same memref view.
+    At the post_lowering stage each step is replaced by the corresponding
+    hardware instruction sequence defined in the device's
+    `patterns ["post_lowering"]` block, which reads from and writes back to
+    that same memref view.
   }];
 
   let arguments = (ins AnyMemRef:$operand,

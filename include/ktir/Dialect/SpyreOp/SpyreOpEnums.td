@@ -49,14 +49,26 @@ def SpyreOp_ReductionKind : I32EnumAttr<
   let genSpecializedAttr = 0;
 }
 
-def SpyreOp_ReductionScope_InSlice     : I32EnumAttrCase<"InSlice",     0, "in_slice">;
-def SpyreOp_ReductionScope_AcrossSlice : I32EnumAttrCase<"AcrossSlice", 1, "across_slice">;
+// In-slice reduction: three FMA variants that differ in which operand is
+// cross-lane shuffled before the multiply-and-accumulate.
+def SpyreOp_ReductionScope_InSliceFmaSrc0Shuf : I32EnumAttrCase<"InSliceFmaSrc0Shuf", 0, "in_slice_fma_src0_shuf">;
+def SpyreOp_ReductionScope_InSliceFmaSrc2Shuf : I32EnumAttrCase<"InSliceFmaSrc2Shuf", 1, "in_slice_fma_src2_shuf">;
+def SpyreOp_ReductionScope_InSliceFmaBothShuf : I32EnumAttrCase<"InSliceFmaBothShuf", 2, "in_slice_fma_both_shuf">;
+
+// Across-slice reduction: splat → scan_with_gap → fma16.
+def SpyreOp_ReductionScope_AcrossSliceSplat   : I32EnumAttrCase<"AcrossSliceSplat",   3, "across_slice_splat">;
+def SpyreOp_ReductionScope_AcrossSliceScanGap : I32EnumAttrCase<"AcrossSliceScanGap", 4, "across_slice_scan_gap">;
+def SpyreOp_ReductionScope_AcrossSliceFma16   : I32EnumAttrCase<"AcrossSliceFma16",   5, "across_slice_fma16">;
 
 def SpyreOp_ReductionScope : I32EnumAttr<
     "ReductionScope",
-    "reduction scope",
-    [SpyreOp_ReductionScope_InSlice,
-     SpyreOp_ReductionScope_AcrossSlice]> {
+    "reduction step within a slice_reduction sequence",
+    [SpyreOp_ReductionScope_InSliceFmaSrc0Shuf,
+     SpyreOp_ReductionScope_InSliceFmaSrc2Shuf,
+     SpyreOp_ReductionScope_InSliceFmaBothShuf,
+     SpyreOp_ReductionScope_AcrossSliceSplat,
+     SpyreOp_ReductionScope_AcrossSliceScanGap,
+     SpyreOp_ReductionScope_AcrossSliceFma16]> {
   let cppNamespace = "::mlir::spyreop";
   let genSpecializedAttr = 0;
 }
