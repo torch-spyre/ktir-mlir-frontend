@@ -176,12 +176,11 @@ def Spyre_Sqrt : SpyreOp_IntrinsicOp<
 }
 
 // slice_reduction operates on a full stick at a time.
-def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
-    [SameOperandsAndResultType]> {
+def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction"> {
   let summary = "Executes one step of a within-slice or across-slice reduction";
   let description = [{
     Represents a single named step in the six-step reduction sequence that the
-    hardware uses to implement a full slice reduction.  Two attributes
+    back-end uses to implement a full slice reduction.  Two attributes
     characterise each instance:
 
     - `reduction_kind` selects the arithmetic operator (e.g. `"add"`, `"max"`).
@@ -190,11 +189,11 @@ def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
       In-slice steps (reduce within every slice, result accumulates in the
       first element of each slice):
       - `"in_slice_fma_src0_shuf"`: FMA where src0 is cross-lane shuffled with
-        pattern A and src2 is taken directly from the register (variant 4).
+        pattern A and src2 is taken directly from the register file.
       - `"in_slice_fma_src2_shuf"`: FMA where src0 is taken directly from the
-        register and src2 is cross-lane shuffled with pattern B (variant 5).
+        register file and src2 is cross-lane shuffled with pattern B.
       - `"in_slice_fma_both_shuf"`: FMA where both src0 and src2 are shuffled,
-        using patterns A and B respectively (variant 6).
+        using patterns A and B respectively.
 
       Across-slice steps (reduce across every slice, result accumulates in the
       first slice):
@@ -203,22 +202,22 @@ def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
       - `"across_slice_scan_gap"`: Prefix scan with gap=8 (left-to-right) that
         accumulates contributions across slice boundaries.
       - `"across_slice_fma16"`: Final multiply-and-accumulate that folds the
-        scanned values into the output register.
+        scanned values into the output register file.
 
-    The op takes a register-file memref as both operand and result.
-    At the post_lowering stage each step is replaced by the corresponding
-    hardware instruction sequence defined in the device's
-    `patterns ["post_lowering"]` block, which reads from and writes back to
-    that same memref view.
+    The op reads from and writes back to the same register-file memref.
+    No allocation is performed.  At the post_lowering stage each step is
+    lowered by the PDL patterns in the device's `patterns ["post_lowering"]`
+    block into the primitive ops that implement it.
   }];
 
-  let arguments = (ins AnyMemRef:$operand,
-                       SpyreOp_ReductionKindAttr:$reduction_kind,
-                       SpyreOp_ReductionScopeAttr:$reduction_scope);
-  let results   = (outs AnyMemRef:$result);
+  let arguments = (ins
+    Arg<AnyMemRef, "register-file memref to read from and write into",
+        [MemRead, MemWrite]>:$mem,
+    SpyreOp_ReductionKindAttr:$reduction_kind,
+    SpyreOp_ReductionScopeAttr:$reduction_scope);
+  let results = (outs);
 
-  // Operand and result share the same memref type (SameOperandsAndResultType).
-  let assemblyFormat = "$operand attr-dict `:` type($operand) `->` type($result)";
+  let assemblyFormat = "$mem attr-dict `:` type($mem)";
 }
 
 #endif  // KTIR_DIALECT_SPYREOP_SPYREOP_TD

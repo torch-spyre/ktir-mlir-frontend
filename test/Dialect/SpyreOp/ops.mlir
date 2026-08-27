@@ -127,55 +127,55 @@ func.func @sqrt(%arg0: !spyreop.df16) -> !spyreop.df16 {
 }
 
 // CHECK-LABEL: func.func @slice_reduction_in_slice_fma_src0_shuf(
-// CHECK-SAME:    %[[A:.*]]: memref<64xf16>) -> memref<64xf16>
-func.func @slice_reduction_in_slice_fma_src0_shuf(%arg0: memref<64xf16>) -> memref<64xf16> {
-  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_src0_shuf>} : memref<64xf16> -> memref<64xf16>
-  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_src0_shuf>} : memref<64xf16> -> memref<64xf16>
-  // CHECK:         return %[[R]] : memref<64xf16>
-  return %0 : memref<64xf16>
+// CHECK-SAME:    %[[M:.*]]: memref<64xf16>)
+func.func @slice_reduction_in_slice_fma_src0_shuf(%arg0: memref<64xf16>) {
+  // CHECK:         spyreop.slice_reduction %[[M]] {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_src0_shuf>} : memref<64xf16>
+  spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_src0_shuf>} : memref<64xf16>
+  // CHECK:         return
+  return
 }
 
 // CHECK-LABEL: func.func @slice_reduction_in_slice_fma_src2_shuf(
-// CHECK-SAME:    %[[A:.*]]: memref<64xf16>) -> memref<64xf16>
-func.func @slice_reduction_in_slice_fma_src2_shuf(%arg0: memref<64xf16>) -> memref<64xf16> {
-  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_src2_shuf>} : memref<64xf16> -> memref<64xf16>
-  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_src2_shuf>} : memref<64xf16> -> memref<64xf16>
-  // CHECK:         return %[[R]] : memref<64xf16>
-  return %0 : memref<64xf16>
+// CHECK-SAME:    %[[M:.*]]: memref<64xf16>)
+func.func @slice_reduction_in_slice_fma_src2_shuf(%arg0: memref<64xf16>) {
+  // CHECK:         spyreop.slice_reduction %[[M]] {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_src2_shuf>} : memref<64xf16>
+  spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_src2_shuf>} : memref<64xf16>
+  // CHECK:         return
+  return
 }
 
 // CHECK-LABEL: func.func @slice_reduction_in_slice_fma_both_shuf(
-// CHECK-SAME:    %[[A:.*]]: memref<64xf16>) -> memref<64xf16>
-func.func @slice_reduction_in_slice_fma_both_shuf(%arg0: memref<64xf16>) -> memref<64xf16> {
-  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_both_shuf>} : memref<64xf16> -> memref<64xf16>
-  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_both_shuf>} : memref<64xf16> -> memref<64xf16>
-  // CHECK:         return %[[R]] : memref<64xf16>
-  return %0 : memref<64xf16>
+// CHECK-SAME:    %[[M:.*]]: memref<64xf16>)
+func.func @slice_reduction_in_slice_fma_both_shuf(%arg0: memref<64xf16>) {
+  // CHECK:         spyreop.slice_reduction %[[M]] {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_both_shuf>} : memref<64xf16>
+  spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<add>, reduction_scope = #spyreop.reduction_scope<in_slice_fma_both_shuf>} : memref<64xf16>
+  // CHECK:         return
+  return
 }
 
 // CHECK-LABEL: func.func @slice_reduction_across_slice_splat(
-// CHECK-SAME:    %[[A:.*]]: memref<64xf16>) -> memref<64xf16>
-func.func @slice_reduction_across_slice_splat(%arg0: memref<64xf16>) -> memref<64xf16> {
-  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_splat>} : memref<64xf16> -> memref<64xf16>
-  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_splat>} : memref<64xf16> -> memref<64xf16>
-  // CHECK:         return %[[R]] : memref<64xf16>
-  return %0 : memref<64xf16>
+// CHECK-SAME:    %[[M:.*]]: memref<64xf16>)
+func.func @slice_reduction_across_slice_splat(%arg0: memref<64xf16>) {
+  // CHECK:         spyreop.slice_reduction %[[M]] {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_splat>} : memref<64xf16>
+  spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_splat>} : memref<64xf16>
+  // CHECK:         return
+  return
 }
 
 // CHECK-LABEL: func.func @slice_reduction_across_slice_scan_gap(
-// CHECK-SAME:    %[[A:.*]]: memref<64xf16>) -> memref<64xf16>
-func.func @slice_reduction_across_slice_scan_gap(%arg0: memref<64xf16>) -> memref<64xf16> {
-  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_scan_gap>} : memref<64xf16> -> memref<64xf16>
-  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_scan_gap>} : memref<64xf16> -> memref<64xf16>
-  // CHECK:         return %[[R]] : memref<64xf16>
-  return %0 : memref<64xf16>
+// CHECK-SAME:    %[[M:.*]]: memref<64xf16>)
+func.func @slice_reduction_across_slice_scan_gap(%arg0: memref<64xf16>) {
+  // CHECK:         spyreop.slice_reduction %[[M]] {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_scan_gap>} : memref<64xf16>
+  spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_scan_gap>} : memref<64xf16>
+  // CHECK:         return
+  return
 }
 
 // CHECK-LABEL: func.func @slice_reduction_across_slice_fma16(
-// CHECK-SAME:    %[[A:.*]]: memref<64xf16>) -> memref<64xf16>
-func.func @slice_reduction_across_slice_fma16(%arg0: memref<64xf16>) -> memref<64xf16> {
-  // CHECK:         %[[R:.*]] = spyreop.slice_reduction %[[A]] {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_fma16>} : memref<64xf16> -> memref<64xf16>
-  %0 = spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_fma16>} : memref<64xf16> -> memref<64xf16>
-  // CHECK:         return %[[R]] : memref<64xf16>
-  return %0 : memref<64xf16>
+// CHECK-SAME:    %[[M:.*]]: memref<64xf16>)
+func.func @slice_reduction_across_slice_fma16(%arg0: memref<64xf16>) {
+  // CHECK:         spyreop.slice_reduction %[[M]] {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_fma16>} : memref<64xf16>
+  spyreop.slice_reduction %arg0 {reduction_kind = #spyreop.reduction_kind<max>, reduction_scope = #spyreop.reduction_scope<across_slice_fma16>} : memref<64xf16>
+  // CHECK:         return
+  return
 }
