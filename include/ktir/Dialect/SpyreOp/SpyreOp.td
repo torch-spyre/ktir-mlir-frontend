@@ -76,6 +76,21 @@ def Spyre_Exp : SpyreOp_IntrinsicOp<
   let summary = "Evaluates the exponential function `exp(x)`";
 }
 
+def Spyre_Exx2 : SpyreOp_IntrinsicOp<
+  "exx2", 
+  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand),
+  (outs 
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$result,
+    Optional<AnyTypeOf<[F16, SpyreOp_DF16, F32]>>:$squares
+  )
+> {
+  let summary = "Computes a mean and a mean of squares, fused or apart";
+
+  let assemblyFormat = [{
+    $operand attr-dict `:` type($result) (`,` type($squares)^)?
+  }];
+}
+
 def Spyre_GeLU : SpyreOp_IntrinsicOp<
   "gelu", 
   (ins AnyTypeOf<[F16, SpyreOp_DF16]>:$operand)
@@ -98,11 +113,36 @@ def Spyre_Idx32ToAddr : SpyreOp_IntrinsicOp<
   }];
 }
 
+def Spyre_LayerNormNorm : SpyreOp_IntrinsicOp<
+  "layernormnorm", 
+  (ins 
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$squares,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$scale,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$weight,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$bias
+  )
+> {
+  let summary = "Computes the normalising part of the `LayerNorm` function";
+
+  let assemblyFormat = [{
+    $operand `squares` $squares `scale` $scale
+    `weight` $weight `bias` $bias attr-dict `:` type($result)
+  }];
+}
+
 def Spyre_LayerNormScale : SpyreOp_IntrinsicOp<
   "layernormscale", 
-  (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand)
+  (ins 
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand,
+    Optional<AnyTypeOf<[F16, SpyreOp_DF16, F32]>>:$squares
+  )
 > {
   let summary = "Computes the scaling part of the `LayerNorm` function";
+
+  let assemblyFormat = [{
+    $operand (`squares` $squares^)? attr-dict `:` type($result)
+  }];
 }
 
 def Spyre_MulI32ToI32 : SpyreOp_IntrinsicOp<

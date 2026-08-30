@@ -27,6 +27,25 @@ func.func @exp(%arg0: f32) -> f32 {
   return %0 : f32
 }
 
+// CHECK-LABEL: func.func @exx2(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @exx2(%arg0: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.exx2 %[[A]] : !spyreop.df16
+  %0 = spyreop.exx2 %arg0 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
+// The mean of squares comes out on its own where the two are wanted apart.
+// CHECK-LABEL: func.func @exx2_apart(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> (!spyreop.df16, !spyreop.df16)
+func.func @exx2_apart(%arg0: !spyreop.df16) -> (!spyreop.df16, !spyreop.df16) {
+  // CHECK:         %[[M:.*]], %[[SQ:.*]] = spyreop.exx2 %[[A]] : !spyreop.df16, !spyreop.df16
+  %0, %1 = spyreop.exx2 %arg0 : !spyreop.df16, !spyreop.df16
+  // CHECK:         return %[[M]], %[[SQ]] : !spyreop.df16, !spyreop.df16
+  return %0, %1 : !spyreop.df16, !spyreop.df16
+}
+
 // CHECK-LABEL: func.func @gelu(
 // CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
 func.func @gelu(%arg0: !spyreop.df16) -> !spyreop.df16 {
@@ -45,11 +64,33 @@ func.func @idx32toaddr(%arg0: i32, %arg1: i32, %arg2: i32) -> i32 {
   return %0 : i32
 }
 
+// CHECK-LABEL: func.func @layernormnorm(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.df16, %[[SQ:.*]]: !spyreop.df16, %[[SC:.*]]: !spyreop.df16, %[[W:.*]]: !spyreop.df16, %[[B:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @layernormnorm(%arg0: !spyreop.df16, %arg1: !spyreop.df16,
+                         %arg2: !spyreop.df16, %arg3: !spyreop.df16,
+                         %arg4: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.layernormnorm %[[A]] squares %[[SQ]] scale %[[SC]] weight %[[W]] bias %[[B]] : !spyreop.df16
+  %0 = spyreop.layernormnorm %arg0 squares %arg1 scale %arg2 weight %arg3 bias %arg4 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
 // CHECK-LABEL: func.func @layernormscale(
 // CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
 func.func @layernormscale(%arg0: !spyreop.df16) -> !spyreop.df16 {
   // CHECK:         %[[R:.*]] = spyreop.layernormscale %[[A]] : !spyreop.df16
   %0 = spyreop.layernormscale %arg0 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
+// The operand is a fused mean and mean of squares; given apart, the mean of
+// squares is the second operand.
+// CHECK-LABEL: func.func @layernormscale_with_squares(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.df16, %[[SQ:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @layernormscale_with_squares(%arg0: !spyreop.df16, %arg1: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.layernormscale %[[A]] squares %[[SQ]] : !spyreop.df16
+  %0 = spyreop.layernormscale %arg0 squares %arg1 : !spyreop.df16
   // CHECK:         return %[[R]] : !spyreop.df16
   return %0 : !spyreop.df16
 }
