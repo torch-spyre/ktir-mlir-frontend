@@ -21,3 +21,19 @@ func.func @exx2_integer(%arg0: i32) {
   spyreop.exx2 %arg0 : i32
   return
 }
+
+// -----
+
+func.func @exx2_fused_plain_result(%arg0: f16) {
+  // expected-error@+1 {{result #0 must be A pair of 16-bit floats held as one value or A pair of 32-bit floats held as one value, but got 'f16'}}
+  %0 = spyreop.exx2_fused %arg0 : f16 -> f16
+  return
+}
+
+// -----
+
+func.func @layernormscale_fused_plain_operand(%arg0: f16) {
+  // expected-error@+1 {{operand #0 must be A pair of 16-bit floats held as one value or A pair of 32-bit floats held as one value, but got 'f16'}}
+  %0 = spyreop.layernormscale_fused %arg0 : f16 -> f16
+  return
+}

@@ -54,4 +54,26 @@ def SpyreOp_DF16 : SpyreOp_Type<"DF16", "df16", [
   }];
 }
 
+def SpyreOp_FP16Fused : SpyreOp_Type<"FP16Fused", "fp16_fused", [
+  VectorElementTypeInterface,
+  MemRefElementTypeInterface
+]> {
+  let summary = "A pair of 16-bit floats held as one value";
+  let description = [{
+    The `fp16_fused` type represents two 16-bit floating-point numbers fused
+    into a single value, as a mean and a mean of squares are.
+  }];
+}
+
+def SpyreOp_FP32Fused : SpyreOp_Type<"FP32Fused", "fp32_fused", [
+  VectorElementTypeInterface,
+  MemRefElementTypeInterface
+]> {
+  let summary = "A pair of 32-bit floats held as one value";
+  let description = [{
+    The `fp32_fused` type represents two 32-bit floating-point numbers fused
+    into a single value, as a mean and a mean of squares are.
+  }];
+}
+
 #endif // KTIR_DIALECT_SPYREOP_SPYREOPTYPES_TD

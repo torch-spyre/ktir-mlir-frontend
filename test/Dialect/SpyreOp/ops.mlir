@@ -27,23 +27,33 @@ func.func @exp(%arg0: f32) -> f32 {
   return %0 : f32
 }
 
+// The mean and the mean of squares come out apart, one result each.
 // CHECK-LABEL: func.func @exx2(
-// CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
-func.func @exx2(%arg0: !spyreop.df16) -> !spyreop.df16 {
-  // CHECK:         %[[R:.*]] = spyreop.exx2 %[[A]] : !spyreop.df16
-  %0 = spyreop.exx2 %arg0 : !spyreop.df16
-  // CHECK:         return %[[R]] : !spyreop.df16
-  return %0 : !spyreop.df16
-}
-
-// The mean of squares comes out on its own where the two are wanted apart.
-// CHECK-LABEL: func.func @exx2_apart(
 // CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> (!spyreop.df16, !spyreop.df16)
-func.func @exx2_apart(%arg0: !spyreop.df16) -> (!spyreop.df16, !spyreop.df16) {
-  // CHECK:         %[[M:.*]], %[[SQ:.*]] = spyreop.exx2 %[[A]] : !spyreop.df16, !spyreop.df16
-  %0, %1 = spyreop.exx2 %arg0 : !spyreop.df16, !spyreop.df16
+func.func @exx2(%arg0: !spyreop.df16) -> (!spyreop.df16, !spyreop.df16) {
+  // CHECK:         %[[M:.*]], %[[SQ:.*]] = spyreop.exx2 %[[A]] : !spyreop.df16
+  %0, %1 = spyreop.exx2 %arg0 : !spyreop.df16
   // CHECK:         return %[[M]], %[[SQ]] : !spyreop.df16, !spyreop.df16
   return %0, %1 : !spyreop.df16, !spyreop.df16
+}
+
+// Fused, the two come out as one value of a fused type.
+// CHECK-LABEL: func.func @exx2_fused(
+// CHECK-SAME:    %[[A:.*]]: f16) -> !spyreop.fp16_fused
+func.func @exx2_fused(%arg0: f16) -> !spyreop.fp16_fused {
+  // CHECK:         %[[R:.*]] = spyreop.exx2_fused %[[A]] : f16 -> !spyreop.fp16_fused
+  %0 = spyreop.exx2_fused %arg0 : f16 -> !spyreop.fp16_fused
+  // CHECK:         return %[[R]] : !spyreop.fp16_fused
+  return %0 : !spyreop.fp16_fused
+}
+
+// CHECK-LABEL: func.func @exx2_fused_f32(
+// CHECK-SAME:    %[[A:.*]]: f32) -> !spyreop.fp32_fused
+func.func @exx2_fused_f32(%arg0: f32) -> !spyreop.fp32_fused {
+  // CHECK:         %[[R:.*]] = spyreop.exx2_fused %[[A]] : f32 -> !spyreop.fp32_fused
+  %0 = spyreop.exx2_fused %arg0 : f32 -> !spyreop.fp32_fused
+  // CHECK:         return %[[R]] : !spyreop.fp32_fused
+  return %0 : !spyreop.fp32_fused
 }
 
 // CHECK-LABEL: func.func @gelu(
@@ -75,24 +85,33 @@ func.func @layernormnorm(%arg0: !spyreop.df16, %arg1: !spyreop.df16,
   return %0 : !spyreop.df16
 }
 
+// The mean and the mean of squares arrive apart, one operand each.
 // CHECK-LABEL: func.func @layernormscale(
-// CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16
-func.func @layernormscale(%arg0: !spyreop.df16) -> !spyreop.df16 {
-  // CHECK:         %[[R:.*]] = spyreop.layernormscale %[[A]] : !spyreop.df16
-  %0 = spyreop.layernormscale %arg0 : !spyreop.df16
-  // CHECK:         return %[[R]] : !spyreop.df16
-  return %0 : !spyreop.df16
-}
-
-// The operand is a fused mean and mean of squares; given apart, the mean of
-// squares is the second operand.
-// CHECK-LABEL: func.func @layernormscale_with_squares(
 // CHECK-SAME:    %[[A:.*]]: !spyreop.df16, %[[SQ:.*]]: !spyreop.df16) -> !spyreop.df16
-func.func @layernormscale_with_squares(%arg0: !spyreop.df16, %arg1: !spyreop.df16) -> !spyreop.df16 {
+func.func @layernormscale(%arg0: !spyreop.df16, %arg1: !spyreop.df16) -> !spyreop.df16 {
   // CHECK:         %[[R:.*]] = spyreop.layernormscale %[[A]] squares %[[SQ]] : !spyreop.df16
   %0 = spyreop.layernormscale %arg0 squares %arg1 : !spyreop.df16
   // CHECK:         return %[[R]] : !spyreop.df16
   return %0 : !spyreop.df16
+}
+
+// Fused, the two arrive as one value of a fused type.
+// CHECK-LABEL: func.func @layernormscale_fused(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.fp16_fused) -> f16
+func.func @layernormscale_fused(%arg0: !spyreop.fp16_fused) -> f16 {
+  // CHECK:         %[[R:.*]] = spyreop.layernormscale_fused %[[A]] : !spyreop.fp16_fused -> f16
+  %0 = spyreop.layernormscale_fused %arg0 : !spyreop.fp16_fused -> f16
+  // CHECK:         return %[[R]] : f16
+  return %0 : f16
+}
+
+// CHECK-LABEL: func.func @layernormscale_fused_f32(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.fp32_fused) -> f32
+func.func @layernormscale_fused_f32(%arg0: !spyreop.fp32_fused) -> f32 {
+  // CHECK:         %[[R:.*]] = spyreop.layernormscale_fused %[[A]] : !spyreop.fp32_fused -> f32
+  %0 = spyreop.layernormscale_fused %arg0 : !spyreop.fp32_fused -> f32
+  // CHECK:         return %[[R]] : f32
+  return %0 : f32
 }
 
 // CHECK-LABEL: func.func @muli32toi32(
