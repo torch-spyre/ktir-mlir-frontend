@@ -54,6 +54,17 @@ def SpyreOp_DF16 : SpyreOp_Type<"DF16", "df16", [
   }];
 }
 
+def SpyreOp_DF16Fused : SpyreOp_Type<"DF16Fused", "df16_fused", [
+  VectorElementTypeInterface,
+  MemRefElementTypeInterface
+]> {
+  let summary = "A pair of df16 floats held as one value";
+  let description = [{
+    The `df16_fused` type represents two `df16` numbers fused into a single
+    value, as a mean and a mean of squares are.
+  }];
+}
+
 def SpyreOp_FP16Fused : SpyreOp_Type<"FP16Fused", "fp16_fused", [
   VectorElementTypeInterface,
   MemRefElementTypeInterface

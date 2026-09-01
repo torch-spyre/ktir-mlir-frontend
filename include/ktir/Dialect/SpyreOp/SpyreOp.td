@@ -29,6 +29,11 @@ include "mlir/Interfaces/SideEffectInterfaces.td"
 
 include "ktir/Dialect/SpyreOp/SpyreOpTypes.td"
 
+// A pair of floats held as one value, whichever float it is a pair of.
+def SpyreOp_AnyFused : AnyTypeOf<[
+  SpyreOp_DF16Fused, SpyreOp_FP16Fused, SpyreOp_FP32Fused
+]>;
+
 class SpyreOp_Op<string mnemonic, list<Trait> traits = []> :
     Op<SpyreOp_Dialect, mnemonic, traits> {
 }
@@ -94,8 +99,8 @@ def Spyre_Exx2 : SpyreOp_IntrinsicOp<
 def Spyre_Exx2Fused : SpyreOp_IntrinsicOp<
   "exx2_fused", 
   (ins AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$operand),
-  (outs AnyTypeOf<[SpyreOp_FP16Fused, SpyreOp_FP32Fused]>:$result),
-  []
+  (outs SpyreOp_AnyFused:$result),
+  [DeclareOpInterfaceMethods<InferTypeOpInterface>]
 > {
   let summary = "Computes a mean and a mean of squares fused into one value";
 
@@ -160,9 +165,9 @@ def Spyre_LayerNormScale : SpyreOp_IntrinsicOp<
 
 def Spyre_LayerNormScaleFused : SpyreOp_IntrinsicOp<
   "layernormscale_fused", 
-  (ins AnyTypeOf<[SpyreOp_FP16Fused, SpyreOp_FP32Fused]>:$operand),
+  (ins SpyreOp_AnyFused:$operand),
   (outs AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$result),
-  []
+  [DeclareOpInterfaceMethods<InferTypeOpInterface>]
 > {
   let summary = "Computes the scaling part of the `LayerNorm` function from a fused mean and mean of squares";
 

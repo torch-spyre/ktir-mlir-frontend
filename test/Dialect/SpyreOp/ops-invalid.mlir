@@ -25,7 +25,7 @@ func.func @exx2_integer(%arg0: i32) {
 // -----
 
 func.func @exx2_fused_plain_result(%arg0: f16) {
-  // expected-error@+1 {{result #0 must be A pair of 16-bit floats held as one value or A pair of 32-bit floats held as one value, but got 'f16'}}
+  // expected-error@+1 {{result #0 must be A pair of df16 floats held as one value or A pair of 16-bit floats held as one value or A pair of 32-bit floats held as one value, but got 'f16'}}
   %0 = spyreop.exx2_fused %arg0 : f16 -> f16
   return
 }
@@ -33,7 +33,28 @@ func.func @exx2_fused_plain_result(%arg0: f16) {
 // -----
 
 func.func @layernormscale_fused_plain_operand(%arg0: f16) {
-  // expected-error@+1 {{operand #0 must be A pair of 16-bit floats held as one value or A pair of 32-bit floats held as one value, but got 'f16'}}
+  // expected-error@+1 {{operand #0 must be A pair of df16 floats held as one value or A pair of 16-bit floats held as one value or A pair of 32-bit floats held as one value, but got 'f16'}}
   %0 = spyreop.layernormscale_fused %arg0 : f16 -> f16
+  return
+}
+
+// -----
+
+// The result of the fused form is the pair of the operand, not a pair of
+// something else.
+func.func @exx2_fused_wrong_pair(%arg0: f16) {
+  // expected-error@+2 {{inferred type(s) '!spyreop.fp16_fused' are incompatible with return type(s) of operation '!spyreop.fp32_fused'}}
+  // expected-error@+1 {{failed to infer returned types}}
+  %0 = spyreop.exx2_fused %arg0 : f16 -> !spyreop.fp32_fused
+  return
+}
+
+// -----
+
+// And what comes out of the fused form is what the operand holds a pair of.
+func.func @layernormscale_fused_wrong_scalar(%arg0: !spyreop.fp16_fused) {
+  // expected-error@+2 {{inferred type(s) 'f16' are incompatible with return type(s) of operation 'f32'}}
+  // expected-error@+1 {{failed to infer returned types}}
+  %0 = spyreop.layernormscale_fused %arg0 : !spyreop.fp16_fused -> f32
   return
 }

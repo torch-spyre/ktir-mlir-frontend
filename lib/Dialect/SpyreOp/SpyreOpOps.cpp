@@ -40,6 +40,52 @@ void SpyreOpDialect::registerOps() {
 }
 
 //===----------------------------------------------------------------------===//
+// Fused pairs
+//===----------------------------------------------------------------------===//
+
+namespace {
+
+/// Gets the type holding a pair of \p scalar, null if there is none for it.
+Type fusedPairOf(Type scalar) {
+  MLIRContext* context = scalar.getContext();
+  if (llvm::isa<Float16Type>(scalar)) return FP16FusedType::get(context);
+  if (llvm::isa<DF16Type>(scalar)) return DF16FusedType::get(context);
+  if (llvm::isa<Float32Type>(scalar)) return FP32FusedType::get(context);
+  return nullptr;
+}
+
+/// Gets the type \p fused holds a pair of, null if it is not a fused type.
+Type scalarBehind(Type fused) {
+  MLIRContext* context = fused.getContext();
+  if (llvm::isa<FP16FusedType>(fused)) return Float16Type::get(context);
+  if (llvm::isa<DF16FusedType>(fused)) return DF16Type::get(context);
+  if (llvm::isa<FP32FusedType>(fused)) return Float32Type::get(context);
+  return nullptr;
+}
+
+}  // namespace
+
+LogicalResult Exx2Fused::inferReturnTypes(
+    MLIRContext* context, std::optional<Location> location, ValueRange operands,
+    DictionaryAttr attributes, OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<Type>& inferred) {
+  const Type fused = fusedPairOf(operands.front().getType());
+  if (!fused) return failure();
+  inferred.push_back(fused);
+  return success();
+}
+
+LogicalResult LayerNormScaleFused::inferReturnTypes(
+    MLIRContext* context, std::optional<Location> location, ValueRange operands,
+    DictionaryAttr attributes, OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<Type>& inferred) {
+  const Type scalar = scalarBehind(operands.front().getType());
+  if (!scalar) return failure();
+  inferred.push_back(scalar);
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
 // Tablegen Definitions
 //===----------------------------------------------------------------------===//
 

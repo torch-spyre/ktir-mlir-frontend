@@ -47,6 +47,15 @@ func.func @exx2_fused(%arg0: f16) -> !spyreop.fp16_fused {
   return %0 : !spyreop.fp16_fused
 }
 
+// CHECK-LABEL: func.func @exx2_fused_df16(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.df16) -> !spyreop.df16_fused
+func.func @exx2_fused_df16(%arg0: !spyreop.df16) -> !spyreop.df16_fused {
+  // CHECK:         %[[R:.*]] = spyreop.exx2_fused %[[A]] : !spyreop.df16 -> !spyreop.df16_fused
+  %0 = spyreop.exx2_fused %arg0 : !spyreop.df16 -> !spyreop.df16_fused
+  // CHECK:         return %[[R]] : !spyreop.df16_fused
+  return %0 : !spyreop.df16_fused
+}
+
 // CHECK-LABEL: func.func @exx2_fused_f32(
 // CHECK-SAME:    %[[A:.*]]: f32) -> !spyreop.fp32_fused
 func.func @exx2_fused_f32(%arg0: f32) -> !spyreop.fp32_fused {
@@ -103,6 +112,15 @@ func.func @layernormscale_fused(%arg0: !spyreop.fp16_fused) -> f16 {
   %0 = spyreop.layernormscale_fused %arg0 : !spyreop.fp16_fused -> f16
   // CHECK:         return %[[R]] : f16
   return %0 : f16
+}
+
+// CHECK-LABEL: func.func @layernormscale_fused_df16(
+// CHECK-SAME:    %[[A:.*]]: !spyreop.df16_fused) -> !spyreop.df16
+func.func @layernormscale_fused_df16(%arg0: !spyreop.df16_fused) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.layernormscale_fused %[[A]] : !spyreop.df16_fused -> !spyreop.df16
+  %0 = spyreop.layernormscale_fused %arg0 : !spyreop.df16_fused -> !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
 }
 
 // CHECK-LABEL: func.func @layernormscale_fused_f32(
