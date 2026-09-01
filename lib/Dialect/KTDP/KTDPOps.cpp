@@ -1299,6 +1299,39 @@ LogicalResult InterTileProduceOp::verifyRegions() {
 }
 
 //===----------------------------------------------------------------------===//
+// InterTileConsumeOp
+//===----------------------------------------------------------------------===//
+
+LogicalResult InterTileConsumeOp::verify() {
+  // Local structural checks on the consumer set attribute. Result-vs-partial
+  // typing is a trait (RangedTypesMatchWith); the cross-op checks against
+  // `producer_tiles_per_group` -- R8 single-source delivery, and R3/R4 on the
+  // dependency set -- live in the legality pass, which can reach the defining
+  // produce op.
+  IntegerSet consumerSet = getConsumerTilesPerGroup().getValue();
+  if (consumerSet.getNumSymbols() != 1)
+    return emitOpError("`consumer_tiles_per_group` must have exactly one "
+                       "symbol (the group index g)");
+  if (consumerSet.getNumDims() != 1)
+    return emitOpError("`consumer_tiles_per_group` must have exactly one "
+                       "dimension (the tile id i)");
+
+  // The dependency set is `(p)[c]` when the pairing is group-independent, or
+  // `(p)[c, g]` otherwise.
+  if (auto depAttr = getProducerDependencyPerConsumerAttr()) {
+    IntegerSet depSet = depAttr.getValue();
+    if (depSet.getNumSymbols() != 1 && depSet.getNumSymbols() != 2)
+      return emitOpError("`producer_dependency_per_consumer` must have one "
+                         "symbol (c) or two symbols (c, g)");
+    if (depSet.getNumDims() != 1)
+      return emitOpError("`producer_dependency_per_consumer` must have exactly "
+                         "one dimension (the producer tile id p)");
+  }
+
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
 // InterTileReduceOp
 //===----------------------------------------------------------------------===//
 

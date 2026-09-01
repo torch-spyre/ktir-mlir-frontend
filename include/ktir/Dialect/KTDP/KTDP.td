@@ -64,13 +64,13 @@ def KTDP_RegionTerminatorOp : Ktdp_Op<"region_terminator", [Terminator]> {
 //===----------------------------------------------------------------------===//
 // Inter-tile communication
 //
-// Implements the design in docs/inter-tile-communication.md. This first cut
-// covers the all-reduce pattern: `ktdp.inter_tile_produce` (production) +
-// `ktdp.inter_tile_reduce` (reduction delivery), full-barrier synchronization.
-// Broadcast (`inter_tile_consume`), reduce-scatter, per-tile synchronization
-// (`producer_dependency_per_consumer`), gather, and scatter are future work;
-// the `!ktdp.tile_future` type and these terminators are shared scaffolding for
-// them.
+// Implements the design in docs/inter-tile-communication.md. Production is
+// `ktdp.inter_tile_produce`; the delivery ops implemented so far are
+// `ktdp.inter_tile_consume` (copy: broadcast and routing) and
+// `ktdp.inter_tile_reduce` (reduction). Both support per-tile synchronization
+// via `producer_dependency_per_consumer`. Reduce-scatter, gather, all-to-all
+// and scatter are future work; the `!ktdp.tile_future` type and these
+// terminators are shared scaffolding for them.
 //===----------------------------------------------------------------------===//
 
 def KTDP_YieldPartialOp : Ktdp_Op<"yield_partial",
@@ -156,6 +156,80 @@ def KTDP_InterTileProduceOp : Ktdp_Op<"inter_tile_produce",
       return getFuture().getType().getPartialTypes();
     }
     /// The groups set, read from the result tile_future type.
+    ::mlir::IntegerSet getGroups() {
+      return getFuture().getType().getGroups().getValue();
+    }
+  }];
+}
+
+def KTDP_InterTileConsumeOp : Ktdp_Op<"inter_tile_consume",
+    [RecursiveMemoryEffects,
+     RangedTypesMatchWith<
+         "result types must match future partial types",
+         "future", "results",
+         "llvm::cast<TileFutureType>($_self).getPartialTypes()">]> {
+  let summary = "Copy delivery op (broadcast / routing)";
+  let description = [{
+    The `ktdp.inter_tile_consume` operation consumes the `!ktdp.tile_future`
+    produced by `ktdp.inter_tile_produce` and delivers each partial unchanged
+    to the consumer tiles. No combining occurs and there is no region.
+
+    Each result `T_r_i` has the same type as the corresponding partial type
+    `T_p_i` — `replicate` placement neither grows nor shrinks a partial.
+
+    Attributes:
+    - `consumer_tiles_per_group` — parameterized affine integer set `(i)[g]`
+      selecting which tiles receive per group.
+    - `producer_dependency_per_consumer` — optional affine integer set
+      `(p)[c]` or `(p)[c, g]` naming, for each consumer tile, the producer it
+      waits on and receives from. When absent, the consumer receives from
+      every producer in its group, which is only meaningful when the group
+      holds one.
+
+    **Every consumer tile must have exactly one source.** A result has room
+    for one contribution and there is no combiner to fold a second, so a
+    consumer tile receiving from two producers has no defined value. With one
+    producer per group that holds automatically and the attribute is a pure
+    synchronization refinement — it changes when each consumer unblocks, not
+    what it receives. That is broadcast.
+
+    With **several** producers per group the attribute is required, and it
+    names the sender: such a group is a *routing* pattern, several
+    independent point-to-point deliveries sharing one produce op, rather than
+    an all-producers delivery. A producer may serve several consumer tiles;
+    it may not serve none.
+
+    The `groups` integer set is inferred from the operand `!ktdp.tile_future`
+    type.
+
+    Example:
+    ```mlir
+    %r = ktdp.inter_tile_consume(%f)
+        consumer_tiles_per_group = affine_set<(i)[g] : (i - 4*g >= 0, -i + 4*g + 3 >= 0)>
+        : <(tensor<1x64xf16>), groups = affine_set<(g) : (g == 0)>>
+          -> tensor<1x64xf16>
+    ```
+  }];
+
+  let arguments = (ins
+    Ktdp_TileFutureType:$future,
+    Builtin_IntegerSetAttr:$consumer_tiles_per_group,
+    OptionalAttr<Builtin_IntegerSetAttr>:$producer_dependency_per_consumer);
+  let results = (outs Variadic<AnyRankedTensor>:$results);
+
+  let assemblyFormat = [{
+    `(` $future `)` `consumer_tiles_per_group` `=` $consumer_tiles_per_group
+    (`,` `producer_dependency_per_consumer` `=` $producer_dependency_per_consumer^)?
+    attr-dict `:` type($future) `->` type($results)
+  }];
+  let hasVerifier = 1;
+
+  let extraClassDeclaration = [{
+    /// Convenience: the partial types carried by the consumed future.
+    ::llvm::ArrayRef<::mlir::RankedTensorType> getPartialTypes() {
+      return getFuture().getType().getPartialTypes();
+    }
+    /// The groups set, read from the operand tile_future type.
     ::mlir::IntegerSet getGroups() {
       return getFuture().getType().getGroups().getValue();
     }

@@ -43,8 +43,12 @@ groupValues(mlir::IntegerSet groupsSet);
 mlir::FailureOr<llvm::DenseSet<int64_t>>
 tilesOf(mlir::IntegerSet tileSet, int64_t gVal);
 
-// Return the set of producer tiles in `depSet` (a set `(p)[c, g]`) for a
-// concrete consumer `cVal` and group `gVal`. Symbols are ordered [c, g].
+// Return the set of producer tiles in `depSet` for a concrete consumer `cVal`
+// and group `gVal`. Symbols are ordered [c, g], and `depSet` may carry either
+// both -- `(p)[c, g]` -- or only `c`, as `(p)[c]`, which is the legal spelling
+// when the pairing is group-independent. `gVal` is ignored in the latter case.
+// Returns failure() when the symbol count is not 1 or 2, or when the
+// producer-tile upper bound is not statically known.
 mlir::FailureOr<llvm::DenseSet<int64_t>>
 depTilesOf(mlir::IntegerSet depSet, int64_t cVal, int64_t gVal);
 
