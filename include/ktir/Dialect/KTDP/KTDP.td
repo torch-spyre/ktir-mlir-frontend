@@ -274,6 +274,7 @@ def KTDP_GetComputeTileIdOp : Ktdp_Op<"get_compute_tile_id",
 // Create Tensor View
 def KTDP_ConstructMemoryViewOp : Ktdp_Op<"construct_memory_view", [
       AttrSizedOperandSegments,
+      DeclareOpInterfaceMethods<ViewLikeOpInterface>,
       MemRefsNormalizable,
       Pure
     ]> {

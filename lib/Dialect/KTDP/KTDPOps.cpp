@@ -1054,8 +1054,10 @@ LogicalResult GetComputeTileIdOp::verify() {
 }
 
 //===----------------------------------------------------------------------===//
-// ConstructMemoryViewOp Verification
+// ConstructMemoryViewOp
 //===----------------------------------------------------------------------===//
+
+mlir::Value ConstructMemoryViewOp::getViewSource() { return getOffset(); }
 
 LogicalResult ConstructMemoryViewOp::verify() {
   unsigned nDims = getStaticSizes().size();
