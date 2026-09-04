@@ -468,8 +468,7 @@ def KTDP_ConstructAccessTilesOp : Ktdp_Op<"construct_access_tile",
 }
 
 def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_tile",
-        [AttrSizedOperandSegments,SingleBlockImplicitTerminator<"ktdp::RegionTerminatorOp">,
-         DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
+        [AttrSizedOperandSegments,SingleBlockImplicitTerminator<"ktdp::RegionTerminatorOp">]> {
 
   let summary = "Operation to construct access tiles over a tensor or memref objects.";
   let hasVerifier = 1;
@@ -553,7 +552,7 @@ def KTDP_ConstructIndirectAccessTilesOp : Ktdp_Op<"construct_indirect_access_til
   let arguments = (ins AnyTypeOf<[AnyMemRef,AnyTensor]>:$base,
                        ArrayAttr:$per_dim_subscript_kinds,
                        ArrayAttr:$per_dim_subscript_maps,
-                       Variadic<AnyMemRef>:$indirect_memrefs,
+                       Arg<Variadic<AnyMemRef>, "indirect index buffers", [MemRead]>:$indirect_memrefs,
                        Variadic<Index>:$captured_variables,
                        Variadic<Index>:$symbol_operands,
                        Builtin_IntegerSetAttr:$variables_space_set,

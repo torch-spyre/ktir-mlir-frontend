@@ -1151,13 +1151,6 @@ void StoreOp::getEffects(
                        SideEffects::DefaultResource::get());
 }
 
-void ConstructIndirectAccessTilesOp::getEffects(
-    SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>> &effects) {
-  // Indirect subscripts implicitly read from their associated index views.
-  effects.emplace_back(MemoryEffects::Read::get(),
-                       SideEffects::DefaultResource::get());
-}
-
 //===----------------------------------------------------------------------===//
 // RuntimeArgExtractOp
 //===----------------------------------------------------------------------===//
