@@ -350,7 +350,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -L -sf \
+          curl --proto "=https" --proto-redir "=https" -L -sf \
             -H "Authorization: Bearer $GH_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ steps.check.outputs.artifact-id }}/zip" \
             -o artifact.zip
