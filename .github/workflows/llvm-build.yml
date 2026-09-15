@@ -22,8 +22,9 @@ on:
         type: string
 
 # Release create/upload/delete (publishing the LLVM build as a release asset).
+# Write permissions given at the job level now instead of at the workflow level
 permissions:
-  contents: write
+  contents: read
 
 env:
   SCCACHE_DIR: ${{ github.workspace }}/sccache
@@ -67,6 +68,8 @@ jobs:
   create-release:
     needs: get-hash
     if: ${{ github.event_name != 'pull_request' }}
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -91,6 +94,8 @@ jobs:
     # skip, so it also defeats the implicit success() gate on get-hash —
     # require get-hash success explicitly, and that create-release didn't fail.
     if: ${{ !cancelled() && needs.get-hash.result == 'success' && needs.create-release.result != 'failure' }}
+    permissions:
+      contents: write
     runs-on: ${{ matrix.config.runs-on }}
 
     strategy:
@@ -315,6 +320,8 @@ jobs:
     name: Refresh artifact (${{ matrix.config.runner }})
     needs: get-hash
     if: ${{ github.event_name == 'schedule' }}
+    permissions:
+      actions: write
     runs-on: ${{ matrix.config.runs-on }}
 
     strategy:
