@@ -221,3 +221,13 @@ func.func @slice_reduction_across_f16(%arg0: tensor<64xf16>) -> tensor<64xf16> {
   // CHECK:         return %[[R]] : tensor<64xf16>
   return %0 : tensor<64xf16>
 }
+
+// CHECK-LABEL: func.func @where(
+// CHECK-SAME:    %[[C:.*]]: !spyreop.df16, %[[L:.*]]: !spyreop.df16, %[[R0:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @where(%arg0: !spyreop.df16, %arg1: !spyreop.df16,
+                 %arg2: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.where %[[C]] ? %[[L]] : %[[R0]] : !spyreop.df16
+  %0 = spyreop.where %arg0 ? %arg1 : %arg2 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}

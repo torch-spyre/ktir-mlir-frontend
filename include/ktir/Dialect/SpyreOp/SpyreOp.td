@@ -246,6 +246,31 @@ def Spyre_Sqrt : SpyreOp_IntrinsicOp<
   let summary = "Computes the square root";
 }
 
+def Spyre_Where : SpyreOp_IntrinsicOp<
+  "where",
+  (ins
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$condition,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
+> {
+  let summary = "Takes one of two values, chosen by a condition";
+
+  let description = [{
+    Takes `lhs` where `condition` is not zero and `rhs` where it is.
+
+    All three and the result share one type, which `SameOperandsAndResultType`
+    enforces: the condition is an ordinary value of the width being selected, not
+    a boolean. The selection itself wants one bit per lane, and making that is the
+    device's business -- it compares the condition against zero into a state the
+    selection then reads.
+  }];
+
+  let assemblyFormat = [{
+    $condition `?` $lhs `:` $rhs attr-dict `:` type($result)
+  }];
+}
+
 // slice_reduction operates on a full stick at a time.
 def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
     [Pure, SameOperandsAndResultType]> {
