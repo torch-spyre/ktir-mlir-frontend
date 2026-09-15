@@ -17,9 +17,26 @@
 //===----------------------------------------------------------------------===//
 //
 // Implements the pure-enumeration helpers declared in KtdpInterTileHelpers.h.
-// We enumerate concrete integer points rather than using Presburger set
-// operations; see the comment in KtdpOps.cpp for the trade-offs vs. the
-// pure-Presburger Option A approach.
+//
+// We ground each parameterized affine set at concrete integer points rather
+// than reasoning about it symbolically. This was a deliberate switch away from
+// a hybrid that used IntegerPolyhedron / isSubsetOf / computeVolume / isEqual
+// (see "Replace Presburger verifier with pure enumeration"; the symbolic design
+// is PR #25). Enumerating keeps every caller in terms of DenseSet<int64_t>,
+// which makes the checks in KTIRCheckLegality.cpp read as the set statements
+// the RFC writes -- subset, coverage, cardinality -- and makes their
+// diagnostics able to name the offending tile.
+//
+// The cost is that a set must be statically bounded to be enumerated at all.
+// Every helper here returns failure() rather than guessing when a bound is not
+// a constant, and callers treat that as "check nothing" -- see the soundness
+// note in KTIRCheckLegality.cpp's header, since silence is only safe for checks
+// that reject on evidence they have.
+//
+// Point-by-point emptiness testing is what bounds the cost: it is linear in the
+// tile-id range per group, which is a handful of tiles per group in practice.
+// A symbolic formulation would avoid that, at the price of diagnostics that
+// cannot point at a tile.
 //
 //===----------------------------------------------------------------------===//
 
@@ -66,21 +83,33 @@ mlir::ktdp::tilesOf(mlir::IntegerSet tileSet, int64_t gVal) {
   return out;
 }
 
+// Bind the symbols of a dependency set `(p)[c]` or `(p)[c, g]` to concrete
+// values. The one-symbol spelling is legal whenever the pairing is
+// group-independent, so the symbol count -- not a fixed count of two -- decides
+// how many values to substitute. Binding a second symbol on a one-symbol set
+// would eliminate the set *dimension* `p` instead.
+static void bindDepSymbols(mlir::FlatLinearValueConstraints &cst,
+                           unsigned numSymbols, int64_t cVal, int64_t gVal) {
+  unsigned symBase = cst.getVarKindOffset(mlir::presburger::VarKind::Symbol);
+  cst.setAndEliminate(symBase, {cVal}); // fix c (first symbol)
+  if (numSymbols > 1)
+    cst.setAndEliminate(symBase, {gVal}); // fix g (now first remaining symbol)
+}
+
 mlir::FailureOr<llvm::DenseSet<int64_t>>
 mlir::ktdp::depTilesOf(mlir::IntegerSet depSet, int64_t cVal, int64_t gVal) {
+  unsigned numSymbols = depSet.getNumSymbols();
+  if (numSymbols < 1 || numSymbols > 2) return failure();
+
   FlatLinearValueConstraints cst(depSet);
-  unsigned symBase = cst.getVarKindOffset(presburger::VarKind::Symbol);
-  cst.setAndEliminate(symBase, {cVal});   // fix c (first symbol)
-  cst.setAndEliminate(symBase, {gVal});   // fix g (now first remaining symbol)
+  bindDepSymbols(cst, numSymbols, cVal, gVal);
   std::optional<int64_t> hi =
       cst.getConstantBound64(presburger::BoundType::UB, /*pos=*/0);
   if (!hi) return failure();
   llvm::DenseSet<int64_t> out;
   for (int64_t p = 0; p <= *hi; ++p) {
     FlatLinearValueConstraints pt(depSet);
-    unsigned sb = pt.getVarKindOffset(presburger::VarKind::Symbol);
-    pt.setAndEliminate(sb, {cVal});
-    pt.setAndEliminate(sb, {gVal});
+    bindDepSymbols(pt, numSymbols, cVal, gVal);
     pt.setAndEliminate(pt.getVarKindOffset(presburger::VarKind::SetDim), {p});
     if (!pt.isIntegerEmpty()) out.insert(p);
   }
