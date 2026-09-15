@@ -221,3 +221,68 @@ func.func @slice_reduction_across_f16(%arg0: tensor<64xf16>) -> tensor<64xf16> {
   // CHECK:         return %[[R]] : tensor<64xf16>
   return %0 : tensor<64xf16>
 }
+
+// CHECK-LABEL: func.func @where(
+// CHECK-SAME:    %[[C:.*]]: !spyreop.df16, %[[L:.*]]: !spyreop.df16, %[[R0:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @where(%arg0: !spyreop.df16, %arg1: !spyreop.df16,
+                 %arg2: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.where %[[C]] ? %[[L]] : %[[R0]] : !spyreop.df16
+  %0 = spyreop.where %arg0 ? %arg1 : %arg2 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
+// CHECK-LABEL: func.func @equal(
+// CHECK-SAME:    %[[L:.*]]: !spyreop.df16, %[[R0:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @equal(%arg0: !spyreop.df16, %arg1: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.equal %[[L]], %[[R0]] : !spyreop.df16
+  %0 = spyreop.equal %arg0, %arg1 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
+// CHECK-LABEL: func.func @notequal(
+// CHECK-SAME:    %[[L:.*]]: f32, %[[R0:.*]]: f32) -> f32
+func.func @notequal(%arg0: f32, %arg1: f32) -> f32 {
+  // CHECK:         %[[R:.*]] = spyreop.notequal %[[L]], %[[R0]] : f32
+  %0 = spyreop.notequal %arg0, %arg1 : f32
+  // CHECK:         return %[[R]] : f32
+  return %0 : f32
+}
+
+// CHECK-LABEL: func.func @greaterthan(
+// CHECK-SAME:    %[[L:.*]]: !spyreop.df16, %[[R0:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @greaterthan(%arg0: !spyreop.df16, %arg1: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.greaterthan %[[L]], %[[R0]] : !spyreop.df16
+  %0 = spyreop.greaterthan %arg0, %arg1 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
+// CHECK-LABEL: func.func @greaterequal(
+// CHECK-SAME:    %[[L:.*]]: f32, %[[R0:.*]]: f32) -> f32
+func.func @greaterequal(%arg0: f32, %arg1: f32) -> f32 {
+  // CHECK:         %[[R:.*]] = spyreop.greaterequal %[[L]], %[[R0]] : f32
+  %0 = spyreop.greaterequal %arg0, %arg1 : f32
+  // CHECK:         return %[[R]] : f32
+  return %0 : f32
+}
+
+// CHECK-LABEL: func.func @lesserthan(
+// CHECK-SAME:    %[[L:.*]]: !spyreop.df16, %[[R0:.*]]: !spyreop.df16) -> !spyreop.df16
+func.func @lesserthan(%arg0: !spyreop.df16, %arg1: !spyreop.df16) -> !spyreop.df16 {
+  // CHECK:         %[[R:.*]] = spyreop.lesserthan %[[L]], %[[R0]] : !spyreop.df16
+  %0 = spyreop.lesserthan %arg0, %arg1 : !spyreop.df16
+  // CHECK:         return %[[R]] : !spyreop.df16
+  return %0 : !spyreop.df16
+}
+
+// CHECK-LABEL: func.func @lesserequal(
+// CHECK-SAME:    %[[L:.*]]: f32, %[[R0:.*]]: f32) -> f32
+func.func @lesserequal(%arg0: f32, %arg1: f32) -> f32 {
+  // CHECK:         %[[R:.*]] = spyreop.lesserequal %[[L]], %[[R0]] : f32
+  %0 = spyreop.lesserequal %arg0, %arg1 : f32
+  // CHECK:         return %[[R]] : f32
+  return %0 : f32
+}
+

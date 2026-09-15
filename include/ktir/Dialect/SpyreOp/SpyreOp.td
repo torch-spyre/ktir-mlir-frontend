@@ -246,6 +246,96 @@ def Spyre_Sqrt : SpyreOp_IntrinsicOp<
   let summary = "Computes the square root";
 }
 
+// The comparisons. Each answers in the width it compared -- one where it holds and
+// zero where it does not -- rather than with a boolean, for the reason `where` takes
+// its condition as a value: the bit per lane a comparison really produces lives
+// below here.
+
+def Spyre_Equal : SpyreOp_IntrinsicOp<
+  "equal",
+  (ins
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
+> {
+  let summary = "Gives one where the operands are equal, zero where they are not";
+}
+
+def Spyre_NotEqual : SpyreOp_IntrinsicOp<
+  "notequal",
+  (ins
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
+> {
+  let summary = "Gives one where the operands differ, zero where they do not";
+}
+
+def Spyre_GreaterThan : SpyreOp_IntrinsicOp<
+  "greaterthan",
+  (ins
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
+> {
+  let summary = "Gives one where the first is greater than the second, zero where it is not";
+}
+
+def Spyre_GreaterEqual : SpyreOp_IntrinsicOp<
+  "greaterequal",
+  (ins
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
+> {
+  let summary = "Gives one where the first is greater than or equal to the second, zero where it is not";
+}
+
+def Spyre_LesserThan : SpyreOp_IntrinsicOp<
+  "lesserthan",
+  (ins
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
+> {
+  let summary = "Gives one where the first is less than the second, zero where it is not";
+}
+
+def Spyre_LesserEqual : SpyreOp_IntrinsicOp<
+  "lesserequal",
+  (ins
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
+> {
+  let summary = "Gives one where the first is less than or equal to the second, zero where it is not";
+}
+
+def Spyre_Where : SpyreOp_IntrinsicOp<
+  "where",
+  (ins
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$condition,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$lhs,
+    AnyTypeOf<[F16, SpyreOp_DF16, F32]>:$rhs
+  )
+> {
+  let summary = "Takes one of two values, chosen by a condition";
+
+  let description = [{
+    Takes `lhs` where `condition` is not zero and `rhs` where it is.
+
+    All three and the result share one type, which `SameOperandsAndResultType`
+    enforces: the condition is an ordinary value of the width being selected, not
+    a boolean. The selection itself wants one bit per lane, and making that is the
+    device's business -- it compares the condition against zero into a state the
+    selection then reads.
+  }];
+
+  let assemblyFormat = [{
+    $condition `?` $lhs `:` $rhs attr-dict `:` type($result)
+  }];
+}
+
 // slice_reduction operates on a full stick at a time.
 def Spyre_SliceReduction : SpyreOp_Op<"slice_reduction",
     [Pure, SameOperandsAndResultType]> {
