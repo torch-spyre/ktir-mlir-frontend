@@ -20,11 +20,8 @@ on:
         description: "Full 40-character LLVM commit SHA to build (overrides cmake/llvm-hash.txt)"
         required: false
         type: string
-
+        
 # Release create/upload/delete (publishing the LLVM build as a release asset).
-# Write permissions given at the job level now instead of at the workflow level
-permissions:
-  contents: read
 
 env:
   SCCACHE_DIR: ${{ github.workspace }}/sccache
@@ -33,6 +30,8 @@ jobs:
 
   # Read the pinned LLVM commit once so all downstream jobs share the same value.
   get-hash:
+    permissions:
+      contents: read
     runs-on: ubuntu-22.04
     outputs:
       llvm-hash:       ${{ steps.read.outputs.llvm-hash }}
@@ -321,6 +320,7 @@ jobs:
     needs: get-hash
     if: ${{ github.event_name == 'schedule' }}
     permissions:
+      contents: read
       actions: write
     runs-on: ${{ matrix.config.runs-on }}
 
