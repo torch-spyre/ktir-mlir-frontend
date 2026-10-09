@@ -24,6 +24,7 @@
 #define KTIR_DIALECT_SPYREOP_SPYREOP_TD
 
 include "mlir/IR/OpBase.td"
+include "mlir/IR/BuiltinAttributeInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
@@ -36,6 +37,34 @@ def SpyreOp_AnyFused : AnyTypeOf<[
 
 class SpyreOp_Op<string mnemonic, list<Trait> traits = []> :
     Op<SpyreOp_Dialect, mnemonic, traits> {
+}
+
+//===----------------------------------------------------------------------===//
+// Constants
+//===----------------------------------------------------------------------===//
+
+def Spyre_Constant : SpyreOp_Op<"constant",
+    [Pure, AllTypesMatch<["value", "result"]>]> {
+  let summary = "Produces a scalar literal requiring device register storage";
+
+  let description = [{
+    Produces the exact f16 or f32 value specified by the floating-point attribute.
+    Device consumers require this value in a register; the scheduler chooses and
+    materializes that storage. This operation does not itself allocate storage.
+
+    The value must not fold to an attribute or to `arith.constant` before register
+    materialization. It deliberately has no `ConstantLike` trait or fold hook.
+    Equivalent operations may share a value when their attributes agree, and
+    unused operations may be erased. Shared values do not require consumers on
+    different execution units to share physical storage.
+  }];
+
+  let arguments = (ins TypedAttrInterface:$value);
+  let results = (outs AnyTypeOf<[F16, F32]>:$result);
+
+  let assemblyFormat = "attr-dict $value";
+
+  let hasVerifier = 1;
 }
 
 //===----------------------------------------------------------------------===//
