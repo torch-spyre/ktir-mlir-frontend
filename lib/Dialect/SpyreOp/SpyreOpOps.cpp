@@ -40,6 +40,18 @@ void SpyreOpDialect::registerOps() {
 }
 
 //===----------------------------------------------------------------------===//
+// Constant
+//===----------------------------------------------------------------------===//
+
+LogicalResult Constant::verify() {
+  if (!llvm::isa<FloatAttr>(getValue())) {
+    return emitOpError("requires a floating-point value attribute, got ")
+           << getValue();
+  }
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
 // Fused pairs
 //===----------------------------------------------------------------------===//
 

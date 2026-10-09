@@ -58,3 +58,91 @@ func.func @layernormscale_fused_wrong_scalar(%arg0: !spyreop.fp16_fused) {
   %0 = spyreop.layernormscale_fused %arg0 : !spyreop.fp16_fused -> f32
   return
 }
+
+// -----
+
+func.func @constant_integer() {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got 'i32'}}
+  %c = spyreop.constant 0 : i32
+  return
+}
+
+// -----
+
+func.func @constant_index() {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got 'index'}}
+  %c = spyreop.constant 0 : index
+  return
+}
+
+// -----
+
+func.func @constant_double() {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got 'f64'}}
+  %c = spyreop.constant 0.0 : f64
+  return
+}
+
+// -----
+
+func.func @constant_bfloat() {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got 'bf16'}}
+  %c = spyreop.constant 0.0 : bf16
+  return
+}
+
+// -----
+
+func.func @constant_tensor() {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got 'tensor<1xf16>'}}
+  %c = spyreop.constant dense<0.0> : tensor<1xf16>
+  return
+}
+
+// -----
+
+func.func @constant_missing_value() {
+  // expected-error@+1 {{requires attribute 'value'}}
+  %c = "spyreop.constant"() : () -> f16
+  return
+}
+
+// -----
+
+func.func @constant_type_mismatch() {
+  // expected-error@+1 {{failed to verify that all of {value, result} have same type}}
+  %c = "spyreop.constant"() {value = 0.0 : f32} : () -> f16
+  return
+}
+
+// -----
+
+func.func @constant_unexpected_operand(%arg: f16) {
+  // expected-error@+1 {{requires zero operands}}
+  %c = "spyreop.constant"(%arg) {value = 0.0 : f16} : (f16) -> f16
+  return
+}
+
+// -----
+
+func.func @constant_no_result() {
+  // expected-error@+1 {{requires one result}}
+  "spyreop.constant"() {value = 0.0 : f16} : () -> ()
+  return
+}
+
+// -----
+
+func.func @constant_two_results() {
+  // expected-error@+1 {{requires one result}}
+  %c:2 = "spyreop.constant"() {value = 0.0 : f16} : () -> (f16, f16)
+  return
+}
+
+// -----
+
+func.func @constant_df16_result() {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got '!spyreop.df16'}}
+  %c = "spyreop.constant"() {value = 0.0 : f16} : () -> !spyreop.df16
+  return
+}

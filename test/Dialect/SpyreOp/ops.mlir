@@ -1,4 +1,5 @@
 // RUN: ktir-opt "%s" | ktir-opt | FileCheck "%s"
+// RUN: ktir-opt "%s" --canonicalize --cse | FileCheck "%s" --check-prefix=CONSTANT
 
 // CHECK-LABEL: func.func @addi32toi32(
 // CHECK-SAME:    %[[A:.*]]: i32, %[[B:.*]]: i32) -> i32
@@ -305,4 +306,69 @@ func.func @compare_lesserequal(%arg0: f32, %arg1: f32) -> f32 {
   %0 = spyreop.compare <lesserequal> %arg0, %arg1 : f32
   // CHECK:         return %[[R]] : f32
   return %0 : f32
+}
+
+// Equal ordinary and register-bound values must retain separate representations,
+// while equal register-bound values may share one.
+// CHECK-LABEL: func.func @constant_storage(
+// CHECK: arith.constant 0.000000e+00 : f16
+// CHECK: spyreop.constant 0.000000e+00 : f16
+// CHECK: spyreop.constant 0.000000e+00 : f16
+// CONSTANT-LABEL: func.func @constant_storage(
+// CONSTANT: %[[PLAIN:.*]] = arith.constant 0.000000e+00 : f16
+// CONSTANT: %[[REG:.*]] = spyreop.constant 0.000000e+00 : f16
+// CONSTANT-NOT: spyreop.constant
+// CONSTANT: return %[[PLAIN]], %[[REG]], %[[REG]]
+func.func @constant_storage() -> (f16, f16, f16) {
+  %plain = arith.constant 0.0 : f16
+  %first = spyreop.constant 0.0 : f16
+  %same = spyreop.constant 0.0 : f16
+  return %plain, %first, %same : f16, f16, f16
+}
+
+// Signed zero and nonzero literals keep their exact value at both widths.
+// CHECK-LABEL: func.func @constant_values(
+// CHECK: spyreop.constant -0.000000e+00 : f16
+// CHECK: spyreop.constant 1.500000e+00 : f16
+// CHECK: spyreop.constant -0.000000e+00 : f32
+// CHECK: spyreop.constant -1.500000e+00 : f32
+// CONSTANT-LABEL: func.func @constant_values(
+// CONSTANT: spyreop.constant -0.000000e+00 : f16
+// CONSTANT: spyreop.constant 1.500000e+00 : f16
+// CONSTANT: spyreop.constant -0.000000e+00 : f32
+// CONSTANT: spyreop.constant -1.500000e+00 : f32
+func.func @constant_values() -> (f16, f16, f32, f32) {
+  %negative_zero = spyreop.constant -0.0 : f16
+  %half = spyreop.constant 1.5 : f16
+  %wide_zero = spyreop.constant -0.0 : f32
+  %wide = spyreop.constant -1.5 : f32
+  return %negative_zero, %half, %wide_zero, %wide : f16, f16, f32, f32
+}
+
+// A value with no consumers has no register requirement to preserve.
+// CHECK-LABEL: func.func @unused_constant(
+// CONSTANT-LABEL: func.func @unused_constant(
+// CONSTANT-NEXT: return
+func.func @unused_constant() {
+  %unused = spyreop.constant 0.0 : f32
+  return
+}
+
+// Infinity and NaN payloads are representation tests, not device math promises.
+// CHECK-LABEL: func.func @constant_special_values(
+// CHECK: spyreop.constant 0x7C00 : f16
+// CHECK: spyreop.constant 0x7E01 : f16
+// CHECK: spyreop.constant 0x7F800000 : f32
+// CHECK: spyreop.constant 0x7FC00001 : f32
+// CONSTANT-LABEL: func.func @constant_special_values(
+// CONSTANT: spyreop.constant 0x7C00 : f16
+// CONSTANT: spyreop.constant 0x7E01 : f16
+// CONSTANT: spyreop.constant 0x7F800000 : f32
+// CONSTANT: spyreop.constant 0x7FC00001 : f32
+func.func @constant_special_values() -> (f16, f16, f32, f32) {
+  %half_inf = spyreop.constant 0x7C00 : f16
+  %half_nan = spyreop.constant 0x7E01 : f16
+  %float_inf = spyreop.constant 0x7F800000 : f32
+  %float_nan = spyreop.constant 0x7FC00001 : f32
+  return %half_inf, %half_nan, %float_inf, %float_nan : f16, f16, f32, f32
 }
