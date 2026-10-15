@@ -15,7 +15,12 @@ llvm_config.with_system_environment(["HOME", "INCLUDE", "LIB", "TMP", "TEMP"])
 llvm_config.use_default_substitutions()
 
 # Add tool directories to PATH
-tool_dirs = [config.ktir_tools_dir, config.llvm_tools_dir]
+tool_dirs = [
+    config.ktir_tools_dir,
+    os.path.join(config.ktir_obj_root, "bin"),
+    os.path.join(config.ktir_obj_root, "tools", "ktir-opt"),
+    config.llvm_tools_dir,
+]
 llvm_config.add_tool_substitutions(["ktir-opt", "FileCheck"], tool_dirs)
 
 # Quote tool paths that contain spaces so shell commands work correctly
