@@ -121,8 +121,8 @@ add_subdirectory(lib)
 if(KTIR_ENABLE_PYTHON_BINDINGS)
   add_subdirectory(python)
 endif()
-add_subdirectory(test)
 add_subdirectory(tools)
+add_subdirectory(test)
 
 # Install instructions, these must come last so that all properties are set.
 add_subdirectory(cmake)
