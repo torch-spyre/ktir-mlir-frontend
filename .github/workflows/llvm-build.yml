@@ -28,6 +28,10 @@ permissions:
 
 env:
   SCCACHE_DIR: ${{ github.workspace }}/sccache
+  # Single place to set the Python used for the LLVM build. 3.15 adds
+  # PyFrozenDict_Type, which breaks the macOS link of the MLIR Python bindings
+  # (nanobind symbol allow-list lacks it).
+  LLVM_BUILD_PYTHON: "3.13"
 
 jobs:
 
@@ -194,13 +198,11 @@ jobs:
       - name: Install prerequisites
         if: ${{ steps.check.outputs.exists != 'true' && success() }}
         run: |
-          # Python is pinned: 3.15 adds PyFrozenDict_Type, which breaks the macOS link
-          # of the MLIR Python bindings (nanobind symbol allow-list lacks it).
           # numpy<2 is only needed for check-mlir's Python tests; stable builds skip it
           if [ "$IS_STABLE_BUILD" = "true" ]; then
-            uv sync --python 3.13 --group llvm-build --no-install-project
+            uv sync --python "$LLVM_BUILD_PYTHON" --group llvm-build --no-install-project
           else
-            uv sync --python 3.13 --group llvm-build-nightly --no-install-project
+            uv sync --python "$LLVM_BUILD_PYTHON" --group llvm-build-nightly --no-install-project
           fi
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
