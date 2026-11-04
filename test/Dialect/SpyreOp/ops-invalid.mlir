@@ -58,3 +58,21 @@ func.func @layernormscale_fused_wrong_scalar(%arg0: !spyreop.fp16_fused) {
   %0 = spyreop.layernormscale_fused %arg0 : !spyreop.fp16_fused -> f32
   return
 }
+
+// -----
+
+// The identity's result is its operand, so the two cannot differ in type. The
+// custom form names one type, so only the generic form can write the mismatch.
+func.func @identity_type_mismatch(%arg0: i32) {
+  // expected-error@+1 {{requires the same type for all operands and results}}
+  %0 = "spyreop.identity"(%arg0) : (i32) -> f32
+  return
+}
+
+// -----
+
+func.func @identity_unsupported_type(%arg0: f64) {
+  // expected-error@+1 {{operand #0 must be 16-bit float or 32-bit float or 32-bit signless integer, but got 'f64'}}
+  %0 = spyreop.identity %arg0 : f64
+  return
+}
