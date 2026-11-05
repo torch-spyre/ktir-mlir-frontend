@@ -239,6 +239,7 @@ jobs:
             -DLLVM_ENABLE_EH=ON
             # Use uv-managed Python so MLIRDetectPythonEnv finds nanobind on all platforms
             -DPython3_EXECUTABLE="$(uv python find)"
+            -DPython_EXECUTABLE="$(uv python find)"
           )
           # lld is 2-4x faster than GNU ld for linking; leave empty on macOS (ld64 is fast on ARM64)
           [ -n "${{ matrix.config.linker }}" ] && CMAKE_ARGS+=( -DLLVM_USE_LINKER="${{ matrix.config.linker }}" )
