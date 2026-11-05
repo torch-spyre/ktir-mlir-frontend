@@ -93,6 +93,19 @@ func.func @gelu(%arg0: !spyreop.df16) -> !spyreop.df16 {
   return %0 : !spyreop.df16
 }
 
+// CHECK-LABEL: func.func @identity(
+// CHECK-SAME:    %[[F16:.*]]: f16, %[[F32:.*]]: f32, %[[I32:.*]]: i32)
+func.func @identity(%arg0: f16, %arg1: f32, %arg2: i32) -> (f16, f32, i32) {
+  // CHECK:         %[[R0:.*]] = spyreop.identity %[[F16]] : f16
+  %0 = spyreop.identity %arg0 : f16
+  // CHECK:         %[[R1:.*]] = spyreop.identity %[[F32]] : f32
+  %1 = spyreop.identity %arg1 : f32
+  // CHECK:         %[[R2:.*]] = spyreop.identity %[[I32]] : i32
+  %2 = spyreop.identity %arg2 : i32
+  // CHECK:         return %[[R0]], %[[R1]], %[[R2]] : f16, f32, i32
+  return %0, %1, %2 : f16, f32, i32
+}
+
 // CHECK-LABEL: func.func @idx32toaddr(
 // CHECK-SAME:    %[[I:.*]]: i32, %[[B:.*]]: i32, %[[S:.*]]: i32) -> i32
 func.func @idx32toaddr(%arg0: i32, %arg1: i32, %arg2: i32) -> i32 {

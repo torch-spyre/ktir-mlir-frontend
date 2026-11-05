@@ -133,6 +133,23 @@ def Spyre_GeLU : SpyreOp_IntrinsicOp<
   let summary = "Evaluates the GeLU function `x * CDF(x)`";
 }
 
+def Spyre_Identity : SpyreOp_IntrinsicOp<
+  "identity",
+  (ins AnyTypeOf<[F16, F32, I32]>:$input)
+> {
+  let summary = "Passes a value through unchanged";
+  let description = [{
+    Gives its operand as its result, bit for bit. The op has no folder and no
+    canonicalizer, and must not be given either.
+
+    Example:
+
+    ```mlir
+    %y = spyreop.identity %x : i32
+    ```
+  }];
+}
+
 def Spyre_Idx32ToAddr : SpyreOp_IntrinsicOp<
   "idx32toaddr", 
   (ins 
