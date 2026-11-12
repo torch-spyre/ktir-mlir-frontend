@@ -1,5 +1,13 @@
 llvm_canonicalize_cmake_booleans(KTIR_ENABLE_PYTHON_BINDINGS)
 
+# Ask CMake where ktir-opt is actually built so lit doesn't have to guess.
+get_target_property(KTIR_TOOLS_DIR ktir-opt RUNTIME_OUTPUT_DIRECTORY)
+if(NOT KTIR_TOOLS_DIR)
+  # No explicit output dir: the exe lands in the dir where the target was defined.
+  get_target_property(KTIR_TOOLS_DIR ktir-opt BINARY_DIR)
+endif()
+message(STATUS "ktir-opt tools dir: ${KTIR_TOOLS_DIR}")
+
 configure_lit_site_cfg(
         lit.site.cfg.py.in
   ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg.py
