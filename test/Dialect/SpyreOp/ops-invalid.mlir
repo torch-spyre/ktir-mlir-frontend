@@ -1,5 +1,37 @@
 // RUN: ktir-opt "%s" -split-input-file -verify-diagnostics
 
+func.func @numeric_cast_kind(%input: tensor<1x64xf16>) -> tensor<2x32xf32> {
+  // expected-error@+1 {{kind must be dl16tofp32 or fp32todl16}}
+  %result = spyreop.numeric_cast %input {kind = "unknown"} : tensor<1x64xf16> -> tensor<2x32xf32>
+  return %result : tensor<2x32xf32>
+}
+
+// -----
+
+func.func @numeric_cast_shape(%input: tensor<1x64xf16>) -> tensor<1x64xf32> {
+  // expected-error@+1 {{requires tensor<Nx64xf16> -> tensor<(2*N)x32xf32>}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<1x64xf16> -> tensor<1x64xf32>
+  return %result : tensor<1x64xf32>
+}
+
+// -----
+
+func.func @numeric_cast_carrier(%input: tensor<2x32xbf16>) -> tensor<1x64xf16> {
+  // expected-error@+1 {{requires tensor<Nx64xf16> -> tensor<(2*N)x32xf32>}}
+  %result = spyreop.numeric_cast %input {kind = "fp32todl16"} : tensor<2x32xbf16> -> tensor<1x64xf16>
+  return %result : tensor<1x64xf16>
+}
+
+// -----
+
+func.func @numeric_cast_row_mismatch(%input: tensor<3x2x64xf16>) -> tensor<6x3x32xf32> {
+  // expected-error@+1 {{requires tensor<Nx64xf16> -> tensor<(2*N)x32xf32>}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<3x2x64xf16> -> tensor<6x3x32xf32>
+  return %result : tensor<6x3x32xf32>
+}
+
+// -----
+
 func.func @softplus_beta_zero(%arg0: f16) {
   // expected-error@+1 {{attribute 'beta' failed to satisfy constraint: 32-bit float attribute which is non-zero}}
   spyreop.softplus %arg0 beta 0.0 threshold 0.0 : f16

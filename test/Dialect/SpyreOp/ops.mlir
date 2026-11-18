@@ -1,5 +1,28 @@
 // RUN: ktir-opt "%s" | ktir-opt | FileCheck "%s"
 
+// CHECK-LABEL: func.func @numeric_cast_widen(
+// CHECK: %[[R:.*]] = spyreop.numeric_cast %{{.*}} {kind = "dl16tofp32"} : tensor<3x64xf16> -> tensor<6x32xf32>
+// CHECK: return %[[R]] : tensor<6x32xf32>
+func.func @numeric_cast_widen(%input: tensor<3x64xf16>) -> tensor<6x32xf32> {
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<3x64xf16> -> tensor<6x32xf32>
+  return %result : tensor<6x32xf32>
+}
+
+// CHECK-LABEL: func.func @numeric_cast_narrow(
+// CHECK: %[[R:.*]] = spyreop.numeric_cast %{{.*}} {kind = "fp32todl16"} : tensor<2x32xf32> -> tensor<1x64xf16>
+// CHECK: return %[[R]] : tensor<1x64xf16>
+func.func @numeric_cast_narrow(%input: tensor<2x32xf32>) -> tensor<1x64xf16> {
+  %result = spyreop.numeric_cast %input {kind = "fp32todl16"} : tensor<2x32xf32> -> tensor<1x64xf16>
+  return %result : tensor<1x64xf16>
+}
+
+// CHECK-LABEL: func.func @numeric_cast_widen_two_rows(
+// CHECK: spyreop.numeric_cast {{.*}} : tensor<3x2x64xf16> -> tensor<6x2x32xf32>
+func.func @numeric_cast_widen_two_rows(%input: tensor<3x2x64xf16>) -> tensor<6x2x32xf32> {
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<3x2x64xf16> -> tensor<6x2x32xf32>
+  return %result : tensor<6x2x32xf32>
+}
+
 // CHECK-LABEL: func.func @addi32toi32(
 // CHECK-SAME:    %[[A:.*]]: i32, %[[B:.*]]: i32) -> i32
 func.func @addi32toi32(%arg0: i32, %arg1: i32) -> i32 {

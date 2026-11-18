@@ -20,13 +20,14 @@
 //
 //===----------------------------------------------------------------------===//
 #include "ktir/Dialect/KTDP/KTDP.h"
-
-#include "ktir/Dialect/KTDP/KTDPTypes.h"
 #include "ktir/Dialect/KTDP/KTDPInterTileHelpers.h"
+#include "ktir/Dialect/KTDP/KTDPTypes.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "mlir/Analysis/FlatLinearValueConstraints.h"
 #include "mlir/Analysis/Presburger/IntegerRelation.h"
+#include "mlir/Analysis/Presburger/PresburgerRelation.h"
+#include "mlir/Dialect/Affine/Analysis/AffineStructures.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/IntegerSet.h"
 #include "mlir/IR/PatternMatch.h"
@@ -149,7 +150,7 @@ void ConstructAccessTilesOp::build(OpBuilder& builder, OperationState& result,
   auto access_tile_order =
       mlir::dyn_cast<AffineMapAttr>(access_tile_order_attr->getValue())
           .getValue();
-  if (access_tile_order.getNumInputs() != access_tile_order.getNumResults()) {
+  if (access_tile_order.getNumDims() != access_tile_order.getNumResults()) {
     return parser.emitError(parser.getNameLoc())
            << "Number of input dimensions and output dimensions in the "
               "access tile order should match";
@@ -196,6 +197,106 @@ void ConstructAccessTilesOp::print(::mlir::OpAsmPrinter& p) {
 // ConstructAccessTilesOp Verification
 //===----------------------------------------------------------------------===//
 
+/// Verify the element-coordinate extension separately from the legacy axis
+/// permutation contract (which also admits masked/non-rectangular tiles).
+static LogicalResult verifyElementOrder(ConstructAccessTilesOp op) {
+  auto order = op.getAccessTileOrder();
+  if (order.isPermutation()) return success();
+
+  auto shape = op.getType().getShape();
+  if (!llvm::all_of(shape, [](int64_t size) { return size >= 0; }))
+    return op.emitOpError(
+        "element access_tile_order requires a static result shape");
+
+  auto domain = op.getAccessTileSet().getValue();
+  if (!llvm::all_of(domain.getConstraints(),
+                    [](AffineExpr expr) { return expr.isPureAffine(); }))
+    return op.emitOpError(
+        "element access_tile_order requires a Presburger access_tile_set");
+  // The set and order share their symbol bindings. An order without symbols
+  // may accompany a symbolic domain.
+  order = AffineMap::get(order.getNumDims(), domain.getNumSymbols(),
+                         order.getResults(), op.getContext());
+  presburger::IntegerRelation graph(
+      presburger::PresburgerSpace::getRelationSpace(
+          order.getNumDims(), order.getNumResults(), order.getNumSymbols()));
+  if (failed(affine::getRelationFromMap(order, graph)))
+    return op.emitOpError(
+        "element access_tile_order requires a Presburger affine map");
+
+  // getRelationFromMap flattens [domain, range] as set dimensions.
+  graph.setSpace(presburger::PresburgerSpace::getRelationSpace(
+      order.getNumDims(), order.getNumResults(), order.getNumSymbols(),
+      graph.getNumLocalVars()));
+  presburger::PresburgerRelation relation(graph);
+  relation = relation.intersectDomain(
+      presburger::PresburgerSet(affine::FlatAffineValueConstraints(domain)));
+
+  // Two memory coordinates may not name the same tensor element. Compose
+  // with the inverse relation instead of assuming an affine inverse exists.
+  auto inverse = relation;
+  inverse.inverse();
+  auto pairs = relation;
+  pairs.compose(inverse);
+  auto identity_map =
+      AffineMap::getMultiDimIdentityMap(shape.size(), op.getContext());
+  identity_map = AffineMap::get(shape.size(), domain.getNumSymbols(),
+                                identity_map.getResults(), op.getContext());
+  presburger::IntegerRelation identity(graph.getSpace());
+  if (failed(affine::getRelationFromMap(identity_map, identity)))
+    return failure();
+  identity.setSpace(presburger::PresburgerSpace::getRelationSpace(
+      shape.size(), shape.size(), domain.getNumSymbols(),
+      identity.getNumLocalVars()));
+  if (!pairs.isSubsetOf(presburger::PresburgerRelation(identity)))
+    return op.emitOpError(
+        "access_tile_order is not injective on access_tile_set");
+
+  presburger::IntegerPolyhedron box(presburger::PresburgerSpace::getSetSpace(
+      shape.size(), domain.getNumSymbols()));
+  for (auto [axis, extent] : llvm::enumerate(shape)) {
+    box.addBound(presburger::BoundType::LB, axis, 0);
+    box.addBound(presburger::BoundType::UB, axis, extent - 1);
+  }
+  auto range = relation.getRangeSet();
+  presburger::PresburgerSet tensor_domain(box);
+  if (!range.isSubsetOf(tensor_domain))
+    return op.emitOpError("access_tile_order maps outside the result shape");
+  // An injective bounded map between equally sized finite boxes is onto.
+  // This avoids projecting floor/mod relations into hundreds of disjuncts.
+  // Check that the source really is a box; bounds alone would accept holes.
+  affine::FlatAffineValueConstraints source(domain);
+  presburger::IntegerPolyhedron source_box(source.getSpace());
+  int64_t source_count = 1, target_count = 1;
+  bool rectangular = domain.getNumSymbols() == 0;
+  for (auto [axis, extent] : llvm::enumerate(shape)) {
+    auto lower = source.getConstantBound64(presburger::BoundType::LB, axis);
+    auto upper = source.getConstantBound64(presburger::BoundType::UB, axis);
+    int64_t width;
+    if (!rectangular || !lower || !upper || *upper < *lower ||
+        __builtin_sub_overflow(*upper, *lower, &width) ||
+        __builtin_add_overflow(width, int64_t{1}, &width) ||
+        __builtin_mul_overflow(source_count, width, &source_count) ||
+        __builtin_mul_overflow(target_count, extent, &target_count)) {
+      rectangular = false;
+      break;
+    }
+    source_box.addBound(presburger::BoundType::LB, axis, *lower);
+    source_box.addBound(presburger::BoundType::UB, axis, *upper);
+  }
+  if (rectangular && presburger::PresburgerSet(source).isEqual(
+                         presburger::PresburgerSet(source_box))) {
+    if (source_count != target_count)
+      return op.emitOpError(
+          "access_tile_order does not cover the result shape");
+    return success();
+  }
+  if (!tensor_domain.isSubsetOf(
+          range.simplify().computeReprWithOnlyDivLocals()))
+    return op.emitOpError("access_tile_order does not cover the result shape");
+  return success();
+}
+
 LogicalResult ConstructAccessTilesOp::verify() {
   // Check that access_tile_set dimensions match base_map results
   auto access_tile_set = getAccessTileSet().getValue();
@@ -221,13 +322,20 @@ LogicalResult ConstructAccessTilesOp::verify() {
            << getSymbolOperands().size() << " symbol operands";
   }
 
-  // Check that access_tile_order is a permutation (inputs == outputs)
+  // The order maps memory dimensions to tensor dimensions. Symbols share
+  // the access_tile_set bindings and are not dimensions.
   auto access_tile_order = getAccessTileOrder();
-  if (access_tile_order.getNumInputs() != access_tile_order.getNumResults()) {
-    return emitOpError("access_tile_order must have equal number of inputs (")
-           << access_tile_order.getNumInputs() << ") and outputs ("
+  if (access_tile_order.getNumDims() != access_tile_order.getNumResults()) {
+    return emitOpError(
+               "access_tile_order must have equal number of dimensions (")
+           << access_tile_order.getNumDims() << ") and outputs ("
            << access_tile_order.getNumResults() << ")";
   }
+
+  if (access_tile_order.getNumSymbols() != 0 &&
+      access_tile_order.getNumSymbols() != getSymbolOperands().size())
+    return emitOpError(
+        "access_tile_order symbols must match access_tile_set bindings");
 
   // Check that access_tile_order dimensions match access_tile_set dimensions
   if (access_tile_order.getNumResults() != access_tile_set.getNumDims()) {
@@ -251,7 +359,7 @@ LogicalResult ConstructAccessTilesOp::verify() {
            << access_tile_set.getNumDims() << ")";
   }
 
-  return success();
+  return verifyElementOrder(*this);
 }
 
 //===----------------------------------------------------------------------===//

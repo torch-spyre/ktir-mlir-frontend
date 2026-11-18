@@ -150,6 +150,29 @@ def Spyre_Identity : SpyreOp_IntrinsicOp<
   }];
 }
 
+def Spyre_NumericCast : SpyreOp_Op<"numeric_cast", [Pure]> {
+  let summary = "Convert a native DL16 tensor to or from staggered FP32 packets";
+  let description = [{
+    Both tensor shapes describe device storage. `dl16tofp32` converts each
+    64-element SEN169 stick (carried by f16) into two 32-element IEEE FP32
+    packets; `fp32todl16` performs the reverse conversion. FP32 packets use
+    the fixed four-lane staggered order. This operation performs a numerical
+    conversion, not a reinterpretation of the element type. For rank >= 3,
+    the innermost three dimensions are packet, row and lane; leading dimensions
+    are independent batches. Rank 2 omits the row dimension. Widening doubles
+    the packet axis and narrowing halves it; both preserve batch and row extents.
+
+    For rank >= 3, the shape relation is `[B..., N, R, 64]` to
+    `[B..., 2*N, R, 32]` for widening and the reverse for narrowing. For
+    example, `[3, 2, 64]` widens to `[6, 2, 32]`. Both tensors must have the
+    same rank, positive static extents, and no encodings.
+  }];
+  let arguments = (ins AnyRankedTensor:$input, StrAttr:$kind);
+  let results = (outs AnyRankedTensor:$result);
+  let assemblyFormat = "$input attr-dict `:` type($input) `->` type($result)";
+  let hasVerifier = 1;
+}
+
 def Spyre_Idx32ToAddr : SpyreOp_IntrinsicOp<
   "idx32toaddr", 
   (ins 
