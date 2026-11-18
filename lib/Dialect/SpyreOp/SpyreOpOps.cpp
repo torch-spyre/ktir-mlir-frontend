@@ -55,7 +55,7 @@ LogicalResult NumericCast::verify() {
   const int64_t rank = native.getRank();
   const int64_t packet_axis = rank > 2 ? rank - 3 : 0;
   if (rank < 2 || wide.getRank() != rank || !native.hasStaticShape() ||
-      !wide.hasStaticShape() || !native.getElementType().isF16() ||
+      !wide.hasStaticShape() || !llvm::isa<DF16Type>(native.getElementType()) ||
       !wide.getElementType().isF32() || native.getEncoding() ||
       wide.getEncoding() || native.getShape().back() != 64 ||
       wide.getShape().back() != 32 ||
@@ -71,8 +71,8 @@ LogicalResult NumericCast::verify() {
                        : wide.getDimSize(axis) == native.getDimSize(axis);
           }))
     return emitOpError(
-        "requires tensor<Nx64xf16> -> tensor<(2*N)x32xf32> or "
-        "tensor<...xNxRx64xf16> -> tensor<...x(2*N)xRx32xf32> "
+        "requires tensor<Nx64x!spyreop.df16> -> tensor<(2*N)x32xf32> or "
+        "tensor<...xNxRx64x!spyreop.df16> -> tensor<...x(2*N)xRx32xf32> "
         "without encodings, with positive static extents");
   return success();
 }

@@ -154,7 +154,7 @@ def Spyre_NumericCast : SpyreOp_Op<"numeric_cast", [Pure]> {
   let summary = "Convert a native DL16 tensor to or from staggered FP32 packets";
   let description = [{
     Both tensor shapes describe device storage. `dl16tofp32` converts each
-    64-element SEN169 stick (carried by f16) into two 32-element IEEE FP32
+    64-element SEN169 stick (`!spyreop.df16`) into two 32-element IEEE FP32
     packets; `fp32todl16` performs the reverse conversion. FP32 packets use
     the fixed four-lane staggered order. This operation performs a numerical
     conversion, not a reinterpretation of the element type. For rank >= 3,
