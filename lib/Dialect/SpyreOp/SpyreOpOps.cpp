@@ -45,35 +45,15 @@ void SpyreOpDialect::registerOps() {
 //===----------------------------------------------------------------------===//
 
 LogicalResult NumericCast::verify() {
-  auto input = llvm::cast<RankedTensorType>(getInput().getType());
-  auto result = llvm::cast<RankedTensorType>(getResult().getType());
   bool widen = getKind() == "dl16tofp32";
   if (!widen && getKind() != "fp32todl16")
     return emitOpError("kind must be dl16tofp32 or fp32todl16");
-  auto native = widen ? input : result;
-  auto wide = widen ? result : input;
-  const int64_t rank = native.getRank();
-  const int64_t packet_axis = rank > 2 ? rank - 3 : 0;
-  if (rank < 2 || wide.getRank() != rank || !native.hasStaticShape() ||
-      !wide.hasStaticShape() || !llvm::isa<DF16Type>(native.getElementType()) ||
-      !wide.getElementType().isF32() || native.getEncoding() ||
-      wide.getEncoding() || native.getShape().back() != 64 ||
-      wide.getShape().back() != 32 ||
-      !llvm::all_of(
-          native.getShape(), [](int64_t size) { return size > 0; }) ||
-      !llvm::all_of(
-          llvm::seq<int64_t>(0, rank - 1),
-          [&](int64_t axis) {
-            return axis == packet_axis
-                       ? wide.getDimSize(axis) % 2 == 0 &&
-                             wide.getDimSize(axis) / 2 ==
-                                 native.getDimSize(axis)
-                       : wide.getDimSize(axis) == native.getDimSize(axis);
-          }))
+  Type native = widen ? getInput().getType() : getResult().getType();
+  Type wide = widen ? getResult().getType() : getInput().getType();
+  if (!native.isF16() || !wide.isF32())
     return emitOpError(
-        "requires tensor<Nx64x!spyreop.df16> -> tensor<(2*N)x32xf32> or "
-        "tensor<...xNxRx64x!spyreop.df16> -> tensor<...x(2*N)xRx32xf32> "
-        "without encodings, with positive static extents");
+        "requires f16 -> f32 for dl16tofp32 or "
+        "f32 -> f16 for fp32todl16");
   return success();
 }
 

@@ -151,24 +151,83 @@ def Spyre_Identity : SpyreOp_IntrinsicOp<
 }
 
 def Spyre_NumericCast : SpyreOp_Op<"numeric_cast", [Pure]> {
-  let summary = "Convert a native DL16 tensor to or from staggered FP32 packets";
+  let summary = "Convert a scalar between SEN169 DL16 and IEEE FP32";
   let description = [{
-    Both tensor shapes describe device storage. `dl16tofp32` converts each
-    64-element SEN169 stick (`!spyreop.df16`) into two 32-element IEEE FP32
-    packets; `fp32todl16` performs the reverse conversion. FP32 packets use
-    the fixed four-lane staggered order. This operation performs a numerical
-    conversion, not a reinterpretation of the element type. For rank >= 3,
-    the innermost three dimensions are packet, row and lane; leading dimensions
-    are independent batches. Rank 2 omits the row dimension. Widening doubles
-    the packet axis and narrowing halves it; both preserve batch and row extents.
+    `dl16tofp32` converts `f16` to `f32`; `fp32todl16` converts `f32` to
+    `f16`. Here `f16` represents SEN169 DL16, not IEEE binary16. The kind
+    selects the target's numeric conversion; ordinary IEEE extension and
+    truncation do not describe it. Tensor and vector operands are not accepted.
 
-    For rank >= 3, the shape relation is `[B..., N, R, 64]` to
-    `[B..., 2*N, R, 32]` for widening and the reverse for narrowing. For
-    example, `[3, 2, 64]` widens to `[6, 2, 32]`. Both tensors must have the
-    same rank, positive static extents, and no encodings.
+    Scalar values have no packet arrangement. When wrapping this operation in
+    `linalg.generic`, its `indexing_maps` must explicitly express the native
+    conversion's Standard DL16 / Staggered FP32 element correspondence.
+    As in Linalg's matmul example, each map takes common loop coordinates to
+    the element coordinates of one input or output tensor.
+
+    For Standard DL16 `[3,2,64]` and Staggered FP32 `[6,2,32]`, use DL16
+    coordinates `(g,r,l)` as the iteration domain: `g` is the 64-element group
+    (`0..2`), `r` is the row (`0..1`), and `l` is the DL16 lane (`0..63`).
+    Each group produces two packets of 32 FP32 elements. The Staggered map is
+    `S(g,r,l) = (2*g + (l mod 8) floordiv 4, r,
+    4*(l floordiv 8) + l mod 4)`. Its first coordinate selects the packet and
+    its last coordinate selects the lane within that packet.
+
+    With identity map `I`, the required maps and element semantics are:
+
+    * `dl16tofp32`: `[I, S]`, with `S` on the output;
+      `fp32[S(g,r,l)] = dl16tofp32(dl16[g,r,l])`.
+    * `fp32todl16`: `[S, I]`, with `S` on the input;
+      `dl16[g,r,l] = fp32todl16(fp32[S(g,r,l)])`.
+
+    Both directions use the same DL16 iteration domain, so narrowing uses
+    `S` on the input, not its inverse. `S` includes both the change in packet
+    width and the Staggered ordering; splitting the lane by 32 alone would
+    describe Standard FP32 and does not satisfy this convention.
+
+    Example:
+
+    ```mlir
+    #I = affine_map<(g, r, l) -> (g, r, l)>
+    #S = affine_map<(g, r, l) -> (
+        2*g + (l mod 8) floordiv 4, r, 4*(l floordiv 8) + l mod 4)>
+
+    func.func @widen(%dl16: tensor<3x2x64xf16>) -> tensor<6x2x32xf32> {
+      %init = tensor.empty() : tensor<6x2x32xf32>
+      %staggered = linalg.generic {
+        indexing_maps = [#I, #S],
+        iterator_types = ["parallel", "parallel", "parallel"]
+      } ins(%dl16 : tensor<3x2x64xf16>) outs(%init : tensor<6x2x32xf32>) {
+      ^bb0(%value: f16, %unused: f32):
+        %cast = spyreop.numeric_cast %value {kind = "dl16tofp32"} : f16 -> f32
+        linalg.yield %cast : f32
+      } -> tensor<6x2x32xf32>
+      return %staggered : tensor<6x2x32xf32>
+    }
+
+    func.func @narrow(%staggered: tensor<6x2x32xf32>) -> tensor<3x2x64xf16> {
+      %init = tensor.empty() : tensor<3x2x64xf16>
+      %dl16 = linalg.generic {
+        indexing_maps = [#S, #I],
+        iterator_types = ["parallel", "parallel", "parallel"]
+      } ins(%staggered : tensor<6x2x32xf32>) outs(%init : tensor<3x2x64xf16>) {
+      ^bb0(%value: f32, %unused: f16):
+        %cast = spyreop.numeric_cast %value {kind = "fp32todl16"} : f32 -> f16
+        linalg.yield %cast : f16
+      } -> tensor<3x2x64xf16>
+      return %dl16 : tensor<3x2x64xf16>
+    }
+    ```
+
+    Programs using Standard FP32 must explicitly express the required
+    Standard/Staggered relayout, for example in the indexing maps of a
+    neighboring unary generic. Lowering must preserve these maps; relayout
+    is not implicit in the scalar operation or a KTDP access tile.
+
+    This is a convention for the surrounding generic. The scalar operation's
+    verifier checks the kind and scalar types; it does not enforce these maps.
   }];
-  let arguments = (ins AnyRankedTensor:$input, StrAttr:$kind);
-  let results = (outs AnyRankedTensor:$result);
+  let arguments = (ins AnyTypeOf<[F16, F32]>:$input, StrAttr:$kind);
+  let results = (outs AnyTypeOf<[F16, F32]>:$result);
   let assemblyFormat = "$input attr-dict `:` type($input) `->` type($result)";
   let hasVerifier = 1;
 }

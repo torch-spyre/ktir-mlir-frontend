@@ -425,20 +425,6 @@ def KTDP_ConstructAccessTilesOp : Ktdp_Op<"construct_access_tile",
       in left-to-right order. This allows the coordinate set (and hence the tile shape)
       to be parameterized by runtime values.
 
-      In addition to a legacy permutation of axes, `access_tile_order` may
-      describe a bijection from the relative memory coordinates `p` in
-      `access_tile_set` to the coordinates of the result tensor. With base `b`
-      and order `O`, load means `tensor[O(p)] = memory[b + p]`, and store means
-      `memory[b + p] = tensor[O(p)]`. Store uses the same map as load, not its
-      inverse. Non-permutation orders require a static result shape, and are
-      checked for injectivity, bounds and complete coverage. Repeated access
-      (broadcast) is not part of this extension. The order and set use the
-      same `symbol_operands` bindings; the order may omit unused symbols.
-
-      A lowering must implement the data movement specified by the order or
-      reject it. Changing a tensor's type or ignoring the order does not
-      implement the bijection.
-
       Conceptually, this operation separates *address computation* from *data
       access*: it materializes a symbolic set of coordinates without performing
       any memory read or write. The resulting value is an access tile whose elements

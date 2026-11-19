@@ -1,57 +1,89 @@
 // RUN: ktir-opt "%s" -split-input-file -verify-diagnostics
 
-func.func @numeric_cast_kind(%input: tensor<1x64x!spyreop.df16>) -> tensor<2x32xf32> {
-  // expected-error@+1 {{kind must be dl16tofp32 or fp32todl16}}
-  %result = spyreop.numeric_cast %input {kind = "unknown"} : tensor<1x64x!spyreop.df16> -> tensor<2x32xf32>
+func.func @scalar_cast_wrong_widen_direction(%input: f32) -> f16 {
+  // expected-error@+1 {{requires f16 -> f32 for dl16tofp32 or f32 -> f16 for fp32todl16}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : f32 -> f16
+  return %result : f16
+}
+
+// -----
+
+func.func @scalar_cast_wrong_narrow_direction(%input: f16) -> f32 {
+  // expected-error@+1 {{requires f16 -> f32 for dl16tofp32 or f32 -> f16 for fp32todl16}}
+  %result = spyreop.numeric_cast %input {kind = "fp32todl16"} : f16 -> f32
+  return %result : f32
+}
+
+// -----
+
+func.func @scalar_cast_same_type(%input: f16) -> f16 {
+  // expected-error@+1 {{requires f16 -> f32 for dl16tofp32 or f32 -> f16 for fp32todl16}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : f16 -> f16
+  return %result : f16
+}
+
+// -----
+
+func.func @scalar_cast_bf16(%input: bf16) -> f32 {
+  // expected-error@+1 {{operand #0 must be 16-bit float or 32-bit float, but got 'bf16'}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : bf16 -> f32
+  return %result : f32
+}
+
+// -----
+
+func.func @scalar_cast_df16(%input: f32) -> !spyreop.df16 {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got '!spyreop.df16'}}
+  %result = spyreop.numeric_cast %input {kind = "fp32todl16"} : f32 -> !spyreop.df16
+  return %result : !spyreop.df16
+}
+
+// -----
+
+func.func @scalar_cast_f64(%input: f16) -> f64 {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got 'f64'}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : f16 -> f64
+  return %result : f64
+}
+
+// -----
+
+func.func @cast_scalar_to_tensor(%input: f16) -> tensor<2x32xf32> {
+  // expected-error@+1 {{result #0 must be 16-bit float or 32-bit float, but got 'tensor<2x32xf32>'}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : f16 -> tensor<2x32xf32>
   return %result : tensor<2x32xf32>
 }
 
 // -----
 
-func.func @numeric_cast_shape(%input: tensor<1x64x!spyreop.df16>) -> tensor<1x64xf32> {
-  // expected-error@+1 {{requires tensor<Nx64x!spyreop.df16> -> tensor<(2*N)x32xf32>}}
-  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<1x64x!spyreop.df16> -> tensor<1x64xf32>
-  return %result : tensor<1x64xf32>
+func.func @cast_tensor_to_scalar(%input: tensor<2x32xf32>) -> f16 {
+  // expected-error@+1 {{operand #0 must be 16-bit float or 32-bit float, but got 'tensor<2x32xf32>'}}
+  %result = spyreop.numeric_cast %input {kind = "fp32todl16"} : tensor<2x32xf32> -> f16
+  return %result : f16
 }
 
 // -----
 
-func.func @numeric_cast_wrong_fp32_type(%input: tensor<2x32xbf16>) -> tensor<1x64x!spyreop.df16> {
-  // expected-error@+1 {{requires tensor<Nx64x!spyreop.df16> -> tensor<(2*N)x32xf32>}}
-  %result = spyreop.numeric_cast %input {kind = "fp32todl16"} : tensor<2x32xbf16> -> tensor<1x64x!spyreop.df16>
-  return %result : tensor<1x64x!spyreop.df16>
+func.func @numeric_cast_kind(%input: f16) -> f32 {
+  // expected-error@+1 {{kind must be dl16tofp32 or fp32todl16}}
+  %result = spyreop.numeric_cast %input {kind = "unknown"} : f16 -> f32
+  return %result : f32
 }
 
 // -----
 
-func.func @numeric_cast_row_mismatch(%input: tensor<3x2x64x!spyreop.df16>) -> tensor<6x3x32xf32> {
-  // expected-error@+1 {{requires tensor<Nx64x!spyreop.df16> -> tensor<(2*N)x32xf32>}}
-  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<3x2x64x!spyreop.df16> -> tensor<6x3x32xf32>
-  return %result : tensor<6x3x32xf32>
+func.func @numeric_cast_tensor(%input: tensor<1x64xf16>) -> tensor<2x32xf32> {
+  // expected-error@+1 {{operand #0 must be 16-bit float or 32-bit float, but got 'tensor<1x64xf16>'}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<1x64xf16> -> tensor<2x32xf32>
+  return %result : tensor<2x32xf32>
 }
 
 // -----
 
-func.func @numeric_cast_f16_input(%input: tensor<3x2x64xf16>) -> tensor<6x2x32xf32> {
-  // expected-error@+1 {{requires tensor<Nx64x!spyreop.df16>}}
-  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<3x2x64xf16> -> tensor<6x2x32xf32>
-  return %result : tensor<6x2x32xf32>
-}
-
-// -----
-
-func.func @numeric_cast_f16_result(%input: tensor<6x2x32xf32>) -> tensor<3x2x64xf16> {
-  // expected-error@+1 {{requires tensor<Nx64x!spyreop.df16>}}
-  %result = spyreop.numeric_cast %input {kind = "fp32todl16"} : tensor<6x2x32xf32> -> tensor<3x2x64xf16>
-  return %result : tensor<3x2x64xf16>
-}
-
-// -----
-
-func.func @numeric_cast_bf16_input(%input: tensor<3x2x64xbf16>) -> tensor<6x2x32xf32> {
-  // expected-error@+1 {{requires tensor<Nx64x!spyreop.df16>}}
-  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : tensor<3x2x64xbf16> -> tensor<6x2x32xf32>
-  return %result : tensor<6x2x32xf32>
+func.func @numeric_cast_vector(%input: vector<64xf16>) -> vector<64xf32> {
+  // expected-error@+1 {{operand #0 must be 16-bit float or 32-bit float, but got 'vector<64xf16>'}}
+  %result = spyreop.numeric_cast %input {kind = "dl16tofp32"} : vector<64xf16> -> vector<64xf32>
+  return %result : vector<64xf32>
 }
 
 // -----
