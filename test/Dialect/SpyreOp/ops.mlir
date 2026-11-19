@@ -1,5 +1,16 @@
 // RUN: ktir-opt "%s" | ktir-opt | FileCheck "%s"
 
+// CHECK-LABEL: func.func @numeric_cast_scalar_roundtrip(
+// CHECK-SAME: %[[INPUT:.*]]: f16) -> f16
+// CHECK: %[[WIDE:.*]] = spyreop.numeric_cast %[[INPUT]] {kind = "dl16tofp32"} : f16 -> f32
+// CHECK: %[[NARROW:.*]] = spyreop.numeric_cast %[[WIDE]] {kind = "fp32todl16"} : f32 -> f16
+// CHECK: return %[[NARROW]] : f16
+func.func @numeric_cast_scalar_roundtrip(%input: f16) -> f16 {
+  %wide = spyreop.numeric_cast %input {kind = "dl16tofp32"} : f16 -> f32
+  %narrow = spyreop.numeric_cast %wide {kind = "fp32todl16"} : f32 -> f16
+  return %narrow : f16
+}
+
 // CHECK-LABEL: func.func @addi32toi32(
 // CHECK-SAME:    %[[A:.*]]: i32, %[[B:.*]]: i32) -> i32
 func.func @addi32toi32(%arg0: i32, %arg1: i32) -> i32 {

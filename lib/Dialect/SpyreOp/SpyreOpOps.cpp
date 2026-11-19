@@ -20,6 +20,7 @@
 #include "ktir/Dialect/SpyreOp/SpyreOp.h"
 // clang-format on
 
+#include <llvm/ADT/STLExtras.h>
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/DialectImplementation.h>
@@ -37,6 +38,23 @@ void SpyreOpDialect::registerOps() {
 #define GET_OP_LIST
 #include "ktir/Dialect/SpyreOp/SpyreOp.cpp.inc"
       >();
+}
+
+//===----------------------------------------------------------------------===//
+// Numeric cast
+//===----------------------------------------------------------------------===//
+
+LogicalResult NumericCast::verify() {
+  bool widen = getKind() == "dl16tofp32";
+  if (!widen && getKind() != "fp32todl16")
+    return emitOpError("kind must be dl16tofp32 or fp32todl16");
+  Type native = widen ? getInput().getType() : getResult().getType();
+  Type wide = widen ? getResult().getType() : getInput().getType();
+  if (!native.isF16() || !wide.isF32())
+    return emitOpError(
+        "requires f16 -> f32 for dl16tofp32 or "
+        "f32 -> f16 for fp32todl16");
+  return success();
 }
 
 //===----------------------------------------------------------------------===//
